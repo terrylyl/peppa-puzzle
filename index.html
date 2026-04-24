@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>佩奇 3x3 拼图</title>
+  <meta name="description" content="适合小朋友玩的佩奇 3x3 拼图游戏。">
+  <meta name="theme-color" content="#f06292">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="佩奇拼图">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <style>
+    :root {
+      --ink: #21314d;
+      --muted: #65738e;
+      --paper: #fffdf8;
+      --line: #ecd7ad;
+      --pink: #f06292;
+      --pink-dark: #cf3d73;
+      --sun: #ffd166;
+      --mint: #73d6a2;
+      --sky: #88c9ff;
+      --cream: #fff6da;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 12%, rgba(255, 209, 102, 0.45), transparent 25%),
+        radial-gradient(circle at 86% 20%, rgba(115, 214, 162, 0.35), transparent 24%),
+        linear-gradient(180deg, #dff3ff 0%, #fff5da 100%);
+      overflow-x: hidden;
+    }
+
+    main {
+      width: min(1120px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 22px 0 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      color: #28385c;
+    }
+
+    .praise {
+      min-height: 34px;
+      margin: 0 0 14px;
+      color: #bd2f68;
+      font-size: clamp(18px, 3vw, 25px);
+      font-weight: 800;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .stat {
+      min-width: 88px;
+      padding: 9px 12px;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      background: rgba(255, 253, 248, 0.9);
+      box-shadow: 0 8px 20px rgba(79, 55, 20, 0.12);
+      text-align: center;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 22px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 290px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .board-shell {
+      position: relative;
+      min-width: 0;
+      padding: 10px;
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.74);
+      box-shadow: 0 20px 45px rgba(50, 63, 99, 0.18);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      overflow: hidden;
+      border: 4px solid #ffffff;
+      border-radius: 14px;
+      background: #cdd5e2;
+    }
+
+    .tile {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border: 2px solid rgba(255, 255, 255, 0.86);
+      background-color: #ffe8f0;
+      background-image: var(--puzzle-image);
+      background-size: 300% 300%;
+      cursor: pointer;
+      transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
+      touch-action: manipulation;
+    }
+
+    .tile::after {
+      content: attr(data-number);
+      position: absolute;
+      right: 8px;
+      bottom: 6px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      background: rgba(33, 49, 77, 0.68);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .tile:focus-visible {
+      outline: 5px solid var(--sun);
+      outline-offset: -5px;
+    }
+
+    .tile:hover {
+      filter: brightness(1.06);
+    }
+
+    .tile.selected {
+      z-index: 2;
+      transform: scale(0.95);
+      box-shadow: inset 0 0 0 7px var(--sun);
+    }
+
+    .tile.correct {
+      box-shadow: inset 0 0 0 5px rgba(115, 214, 162, 0.78);
+    }
+
+    .tile.pop {
+      animation: pop 360ms ease;
+    }
+
+    .side {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .panel {
+      padding: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.86);
+      border-radius: 14px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: 0 12px 28px rgba(79, 55, 20, 0.12);
+    }
+
+    .preview {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border: 3px solid #ffffff;
+      border-radius: 10px;
+    }
+
+    .level-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--cream);
+      color: #6b3f00;
+      font-weight: 900;
+    }
+
+    .level-card strong {
+      color: #bd2f68;
+      font-size: 22px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      color: #28385c;
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+
+    .level-picker {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+    }
+
+    .level-thumb {
+      position: relative;
+      min-height: 0;
+      aspect-ratio: 16 / 9;
+      padding: 0;
+      overflow: hidden;
+      border: 3px solid #ffffff;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 4px 0 #c9d8e8;
+    }
+
+    .level-thumb img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .level-thumb span {
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(33, 49, 77, 0.78);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .level-thumb.active {
+      border-color: var(--sun);
+      box-shadow: 0 4px 0 #d39d24;
+    }
+
+    .level-thumb.done::after {
+      content: "OK";
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      padding: 3px 5px;
+      border-radius: 7px;
+      background: var(--mint);
+      color: #17452e;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      min-height: 48px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--pink);
+      color: #ffffff;
+      font: inherit;
+      font-size: 17px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 6px 0 var(--pink-dark);
+      transform: translateY(0);
+    }
+
+    button:hover {
+      background: #ee4e86;
+    }
+
+    button:active {
+      box-shadow: 0 2px 0 var(--pink-dark);
+      transform: translateY(4px);
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: 0.58;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button.secondary {
+      background: var(--sky);
+      color: #1f3a5e;
+      box-shadow: 0 6px 0 #4f9bd0;
+    }
+
+    button.helper {
+      background: var(--mint);
+      color: #17452e;
+      box-shadow: 0 6px 0 #44aa72;
+    }
+
+    button.next {
+      background: var(--sun);
+      color: #644200;
+      box-shadow: 0 6px 0 #d39d24;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .confetti {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .confetti i {
+      position: absolute;
+      top: -20px;
+      width: 12px;
+      height: 18px;
+      border-radius: 3px;
+      animation: fall 1100ms ease-in forwards;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      48% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes fall {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(105vh) rotate(420deg);
+      }
+    }
+
+    @media (max-width: 860px) {
+      main {
+        width: min(100vw - 18px, 720px);
+        padding-top: 14px;
+      }
+
+      .topbar,
+      .layout {
+        display: block;
+      }
+
+      .stats {
+        justify-content: flex-start;
+        margin-top: 12px;
+      }
+
+      .side {
+        margin-top: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <h1>佩奇拼图</h1>
+      <div class="stats" aria-label="游戏状态">
+        <div class="stat"><span>关卡</span><strong id="level">1/9</strong></div>
+        <div class="stat"><span>奖章</span><strong id="badges">0</strong></div>
+        <div class="stat"><span>放对了</span><strong id="correct">0/9</strong></div>
+        <div class="stat"><span>步数</span><strong id="moves">0</strong></div>
+      </div>
+    </div>
+    <p id="praise" class="praise" aria-live="polite">点两块图片，帮佩奇换位置吧。</p>
+
+    <div class="layout">
+      <section class="board-shell" aria-label="拼图区域">
+        <div id="board" class="board"></div>
+      </section>
+
+      <aside class="side">
+        <div class="panel">
+          <div class="level-card">
+            <span id="levelName">第 1 关</span>
+            <strong id="levelProgress">1 / 9</strong>
+          </div>
+          <img id="preview" class="preview" src="peppa1.jpg" alt="完整参考图">
+          <div class="actions">
+            <button id="shuffleBtn" type="button">重玩本关</button>
+            <button id="nextBtn" class="next" type="button">下一张</button>
+            <button id="helpBtn" class="helper" type="button">帮我放一块</button>
+            <button id="solveBtn" class="secondary" type="button">看看完成图</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>选择图片</h2>
+          <div id="levelPicker" class="level-picker" aria-label="选择关卡"></div>
+        </div>
+        <div class="panel">
+          <p class="hint">玩法很简单：先点一块，再点另一块，它们就会换位置。绿色边框表示这块已经放对啦。</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+  <script>
+    const SIZE = 3;
+    const TOTAL = SIZE * SIZE;
+    const levels = Array.from({ length: 9 }, (_, index) => ({
+      name: `\u7b2c ${index + 1} \u5173`,
+      image: `peppa${index + 1}.jpg`
+    }));
+    const cheers = [
+      "\u771f\u68d2\uff0c\u53c8\u653e\u5bf9\u4e00\u5757\uff01",
+      "\u597d\u5389\u5bb3\uff0c\u7ee7\u7eed\u627e\u4e00\u627e\uff01",
+      "\u4f69\u5947\u8981\u5f00\u5fc3\u5566\uff01",
+      "\u592a\u597d\u4e86\uff0c\u8fd9\u5757\u5bf9\u4e86\uff01"
+    ];
+
+    const board = document.getElementById("board");
+    const levelEl = document.getElementById("level");
+    const badgesEl = document.getElementById("badges");
+    const correctEl = document.getElementById("correct");
+    const movesEl = document.getElementById("moves");
+    const praiseEl = document.getElementById("praise");
+    const confettiEl = document.getElementById("confetti");
+    const previewEl = document.getElementById("preview");
+    const levelNameEl = document.getElementById("levelName");
+    const levelProgressEl = document.getElementById("levelProgress");
+    const levelPickerEl = document.getElementById("levelPicker");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const helpBtn = document.getElementById("helpBtn");
+    const solveBtn = document.getElementById("solveBtn");
+
+    let order = [];
+    let selectedIndex = null;
+    let moves = 0;
+    let currentLevel = 0;
+    let completedLevels = new Set();
+    let lastPopped = [];
+
+    function currentImage() {
+      return levels[currentLevel].image;
+    }
+
+    function makeShuffledOrder() {
+      const next = Array.from({ length: TOTAL }, (_, index) => index);
+      for (let i = next.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+      if (next.every((tile, index) => tile === index)) {
+        [next[0], next[1]] = [next[1], next[0]];
+      }
+      return next;
+    }
+
+    function countCorrect(list = order) {
+      return list.filter((tile, index) => tile === index).length;
+    }
+
+    function tilePosition(tileNumber) {
+      const row = Math.floor(tileNumber / SIZE);
+      const col = tileNumber % SIZE;
+      return `${(col * 100) / (SIZE - 1)}% ${(row * 100) / (SIZE - 1)}%`;
+    }
+
+    function playTone(kind) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const context = new AudioContext();
+      const notes = kind === "win" ? [523, 659, 784] : [659, 784];
+      notes.forEach((frequency, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, context.currentTime + index * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + index * 0.08 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + index * 0.08 + 0.18);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(context.currentTime + index * 0.08);
+        oscillator.stop(context.currentTime + index * 0.08 + 0.2);
+      });
+    }
+
+    function throwConfetti() {
+      const colors = ["#f06292", "#ffd166", "#73d6a2", "#88c9ff", "#ff9f80"];
+      confettiEl.innerHTML = "";
+      for (let i = 0; i < 34; i += 1) {
+        const bit = document.createElement("i");
+        bit.style.left = `${Math.random() * 100}%`;
+        bit.style.background = colors[i % colors.length];
+        bit.style.animationDelay = `${Math.random() * 240}ms`;
+        bit.style.transform = `rotate(${Math.random() * 180}deg)`;
+        confettiEl.appendChild(bit);
+      }
+      window.setTimeout(() => {
+        confettiEl.innerHTML = "";
+      }, 1600);
+    }
+
+    function syncLevelImage() {
+      const image = currentImage();
+      document.documentElement.style.setProperty("--puzzle-image", `url("${image}")`);
+      previewEl.src = image;
+      previewEl.alt = `${levels[currentLevel].name}\u5b8c\u6574\u53c2\u8003\u56fe`;
+      levelNameEl.textContent = levels[currentLevel].name;
+      levelProgressEl.textContent = `${currentLevel + 1} / ${levels.length}`;
+    }
+
+    function updateStats() {
+      const correct = countCorrect();
+      levelEl.textContent = `${currentLevel + 1}/${levels.length}`;
+      badgesEl.textContent = String(completedLevels.size);
+      correctEl.textContent = `${correct}/${TOTAL}`;
+      movesEl.textContent = String(moves);
+      helpBtn.disabled = correct === TOTAL;
+      nextBtn.disabled = currentLevel === levels.length - 1 && correct !== TOTAL;
+      renderLevelPicker();
+    }
+
+    function renderLevelPicker() {
+      levelPickerEl.innerHTML = "";
+      levels.forEach((level, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "level-thumb";
+        if (index === currentLevel) button.classList.add("active");
+        if (completedLevels.has(index)) button.classList.add("done");
+        button.setAttribute("aria-label", `\u9009\u62e9${level.name}`);
+
+        const img = document.createElement("img");
+        img.src = level.image;
+        img.alt = "";
+        const label = document.createElement("span");
+        label.textContent = String(index + 1);
+        button.append(img, label);
+        button.addEventListener("click", () => startLevel(index));
+        levelPickerEl.appendChild(button);
+      });
+    }
+
+    function render() {
+      board.innerHTML = "";
+      order.forEach((tileNumber, slotIndex) => {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = "tile";
+        tile.draggable = true;
+        tile.style.backgroundPosition = tilePosition(tileNumber);
+        tile.dataset.number = String(tileNumber + 1);
+        tile.setAttribute("aria-label", `\u7b2c ${slotIndex + 1} \u683c`);
+
+        if (selectedIndex === slotIndex) tile.classList.add("selected");
+        if (tileNumber === slotIndex) tile.classList.add("correct");
+        if (lastPopped.includes(slotIndex)) tile.classList.add("pop");
+
+        tile.addEventListener("click", () => selectOrSwap(slotIndex));
+        tile.addEventListener("dragstart", event => {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", String(slotIndex));
+        });
+        tile.addEventListener("dragover", event => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        });
+        tile.addEventListener("drop", event => {
+          event.preventDefault();
+          const from = Number(event.dataTransfer.getData("text/plain"));
+          swapTiles(from, slotIndex);
+        });
+
+        board.appendChild(tile);
+      });
+      updateStats();
+      lastPopped = [];
+    }
+
+    function celebrateIfBetter(before) {
+      const after = countCorrect();
+      if (after > before) {
+        praiseEl.textContent = cheers[Math.floor(Math.random() * cheers.length)];
+        playTone("good");
+      } else {
+        praiseEl.textContent = "\u6ca1\u5173\u7cfb\uff0c\u518d\u8bd5\u4e00\u6b21\u3002";
+      }
+
+      if (after === TOTAL) {
+        const firstCompletion = !completedLevels.has(currentLevel);
+        completedLevels.add(currentLevel);
+        playTone("win");
+        throwConfetti();
+        if (completedLevels.size === levels.length) {
+          praiseEl.textContent = "9 \u5f20\u56fe\u7247\u90fd\u5b8c\u6210\u5566\uff0c\u5956\u7ae0\u6536\u96c6\u6ee1\u4e86\uff01";
+        } else if (firstCompletion) {
+          praiseEl.textContent = `\u7b2c ${currentLevel + 1} \u5173\u5b8c\u6210\u5566\uff0c\u70b9\u201c\u4e0b\u4e00\u5f20\u201d\u7ee7\u7eed\u3002`;
+        } else {
+          praiseEl.textContent = "\u8fd9\u5f20\u53c8\u62fc\u597d\u5566\uff0c\u771f\u719f\u7ec3\uff01";
+        }
+      }
+    }
+
+    function swapTiles(first, second, assisted = false) {
+      if (first === second || Number.isNaN(first) || Number.isNaN(second)) return;
+      const before = countCorrect();
+      [order[first], order[second]] = [order[second], order[first]];
+      selectedIndex = null;
+      moves += assisted ? 0 : 1;
+      lastPopped = [first, second].filter(index => order[index] === index);
+      celebrateIfBetter(before);
+      render();
+    }
+
+    function selectOrSwap(slotIndex) {
+      if (selectedIndex === null) {
+        selectedIndex = slotIndex;
+        praiseEl.textContent = "\u518d\u70b9\u53e6\u4e00\u5757\uff0c\u8bd5\u8bd5\u770b\u3002";
+        render();
+        return;
+      }
+      swapTiles(selectedIndex, slotIndex);
+    }
+
+    function helpOneTile() {
+      const targetSlot = order.findIndex((tile, slot) => tile !== slot);
+      if (targetSlot === -1) return;
+      const sourceSlot = order.findIndex(tile => tile === targetSlot);
+      praiseEl.textContent = "\u5c0f\u5e2e\u624b\u6765\u5566\uff0c\u653e\u597d\u4e00\u5757\u3002";
+      swapTiles(targetSlot, sourceSlot, true);
+    }
+
+    function startLevel(levelIndex) {
+      currentLevel = levelIndex;
+      order = makeShuffledOrder();
+      selectedIndex = null;
+      moves = 0;
+      lastPopped = [];
+      syncLevelImage();
+      praiseEl.textContent = `\u5f00\u59cb${levels[currentLevel].name}\uff0c\u5e2e\u4f69\u5947\u628a\u56fe\u7247\u62fc\u597d\u5427\u3002`;
+      render();
+    }
+
+    function nextLevel() {
+      if (currentLevel < levels.length - 1) {
+        startLevel(currentLevel + 1);
+        return;
+      }
+      if (completedLevels.size === levels.length) {
+        praiseEl.textContent = "\u5168\u90e8\u56fe\u7247\u90fd\u73a9\u8fc7\u5566\uff0c\u53ef\u4ee5\u6311\u559c\u6b22\u7684\u518d\u73a9\u4e00\u6b21\u3002";
+        throwConfetti();
+      } else {
+        const firstUnfinished = levels.findIndex((_, index) => !completedLevels.has(index));
+        startLevel(firstUnfinished === -1 ? 0 : firstUnfinished);
+      }
+    }
+
+    function solve() {
+      order = Array.from({ length: TOTAL }, (_, index) => index);
+      selectedIndex = null;
+      lastPopped = Array.from({ length: TOTAL }, (_, index) => index);
+      completedLevels.add(currentLevel);
+      praiseEl.textContent = `\u770b\uff0c${levels[currentLevel].name}\u5b8c\u6574\u56fe\u7247\u5728\u8fd9\u91cc\u3002`;
+      throwConfetti();
+      render();
+    }
+
+    shuffleBtn.addEventListener("click", () => startLevel(currentLevel));
+    nextBtn.addEventListener("click", nextLevel);
+    helpBtn.addEventListener("click", helpOneTile);
+    solveBtn.addEventListener("click", solve);
+    startLevel(0);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

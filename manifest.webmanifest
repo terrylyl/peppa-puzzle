@@ -1,0 +1,25 @@
+{
+  "name": "佩奇拼图",
+  "short_name": "佩奇拼图",
+  "description": "适合小朋友玩的 3x3 佩奇拼图关卡游戏。",
+  "lang": "zh-CN",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#dff3ff",
+  "theme_color": "#f06292",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
