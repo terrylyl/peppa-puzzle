@@ -164,11 +164,6 @@
       font-weight: 900;
     }
 
-    .tile:focus,
-    .tile:active {
-      outline: none;
-    }
-
     @media (hover: hover) and (pointer: fine) {
       .tile:hover {
         filter: brightness(1.06);
@@ -619,10 +614,9 @@
     function render() {
       board.innerHTML = "";
       order.forEach((tileNumber, slotIndex) => {
-        const tile = document.createElement("button");
-        tile.type = "button";
+        const tile = document.createElement("div");
         tile.className = "tile";
-        tile.tabIndex = -1;
+        tile.role = "button";
         tile.draggable = true;
         tile.style.backgroundPosition = tilePosition(tileNumber);
         tile.dataset.number = String(tileNumber + 1);
@@ -632,8 +626,8 @@
         if (tileNumber === slotIndex) tile.classList.add("correct");
         if (lastPopped.includes(slotIndex)) tile.classList.add("pop");
 
-        tile.addEventListener("click", event => {
-          event.currentTarget.blur();
+        tile.addEventListener("pointerup", event => {
+          if (event.pointerType === "mouse" && event.button !== 0) return;
           selectOrSwap(slotIndex);
         });
         tile.addEventListener("dragstart", event => {
@@ -709,7 +703,11 @@
         clearTileFocus();
         return;
       }
-      swapTiles(selectedIndex, slotIndex);
+
+      const firstSlot = selectedIndex;
+      selectedIndex = null;
+      clearTileFocus();
+      swapTiles(firstSlot, slotIndex);
     }
 
     function helpOneTile() {
