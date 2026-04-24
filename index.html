@@ -24,6 +24,7 @@
       --mint: #73d6a2;
       --sky: #88c9ff;
       --cream: #fff6da;
+      --puzzle-ratio: 16 / 9;
       font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
     }
 
@@ -122,10 +123,10 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
-      aspect-ratio: 16 / 9;
+      aspect-ratio: var(--puzzle-ratio);
       width: 100%;
       overflow: hidden;
-      border: 4px solid #ffffff;
+      border: 3px solid #ffffff;
       border-radius: 14px;
       background: #cdd5e2;
     }
@@ -134,13 +135,14 @@
       position: relative;
       width: 100%;
       height: 100%;
-      border: 2px solid rgba(255, 255, 255, 0.86);
+      border: 0;
       background-color: #ffe8f0;
       background-image: var(--puzzle-image);
       background-size: 300% 300%;
       cursor: pointer;
       transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
       touch-action: manipulation;
+      box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
     }
 
     .tile::after {
@@ -160,8 +162,8 @@
     }
 
     .tile:focus-visible {
-      outline: 5px solid var(--sun);
-      outline-offset: -5px;
+      outline: 3px solid rgba(255, 209, 102, 0.9);
+      outline-offset: -3px;
     }
 
     .tile:hover {
@@ -170,12 +172,16 @@
 
     .tile.selected {
       z-index: 2;
-      transform: scale(0.95);
-      box-shadow: inset 0 0 0 7px var(--sun);
+      transform: scale(0.985);
+      box-shadow:
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
+        inset 0 0 0 4px rgba(255, 209, 102, 0.92);
     }
 
     .tile.correct {
-      box-shadow: inset 0 0 0 5px rgba(115, 214, 162, 0.78);
+      box-shadow:
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
+        inset 0 0 0 2px rgba(115, 214, 162, 0.68);
     }
 
     .tile.pop {
@@ -199,8 +205,9 @@
     .preview {
       display: block;
       width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
+      aspect-ratio: var(--puzzle-ratio);
+      object-fit: contain;
+      background: #fff2cf;
       border: 3px solid #ffffff;
       border-radius: 10px;
     }
@@ -556,6 +563,12 @@
       previewEl.alt = `${levels[currentLevel].name}\u5b8c\u6574\u53c2\u8003\u56fe`;
       levelNameEl.textContent = levels[currentLevel].name;
       levelProgressEl.textContent = `${currentLevel + 1} / ${levels.length}`;
+
+      const probe = new Image();
+      probe.onload = () => {
+        document.documentElement.style.setProperty("--puzzle-ratio", `${probe.naturalWidth} / ${probe.naturalHeight}`);
+      };
+      probe.src = image;
     }
 
     function updateStats() {
@@ -655,6 +668,9 @@
       const before = countCorrect();
       [order[first], order[second]] = [order[second], order[first]];
       selectedIndex = null;
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       moves += assisted ? 0 : 1;
       lastPopped = [first, second].filter(index => order[index] === index);
       celebrateIfBetter(before);
@@ -662,6 +678,16 @@
     }
 
     function selectOrSwap(slotIndex) {
+      if (selectedIndex === slotIndex) {
+        selectedIndex = null;
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        praiseEl.textContent = "\u5df2\u7ecf\u53d6\u6d88\u9009\u4e2d\uff0c\u518d\u9009\u4e00\u5757\u5427\u3002";
+        render();
+        return;
+      }
+
       if (selectedIndex === null) {
         selectedIndex = slotIndex;
         praiseEl.textContent = "\u518d\u70b9\u53e6\u4e00\u5757\uff0c\u8bd5\u8bd5\u770b\u3002";

@@ -1,4 +1,4 @@
-const CACHE_NAME = "peppa-puzzle-v1";
+const CACHE_NAME = "peppa-puzzle-v2";
 const ASSETS = [
   "./",
   "index.html",
