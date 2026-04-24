@@ -132,6 +132,9 @@
     }
 
     .tile {
+      -webkit-appearance: none;
+      appearance: none;
+      -webkit-tap-highlight-color: transparent;
       position: relative;
       width: 100%;
       height: 100%;
@@ -161,13 +164,15 @@
       font-weight: 900;
     }
 
-    .tile:focus-visible {
-      outline: 3px solid rgba(255, 209, 102, 0.9);
-      outline-offset: -3px;
+    .tile:focus,
+    .tile:active {
+      outline: none;
     }
 
-    .tile:hover {
-      filter: brightness(1.06);
+    @media (hover: hover) and (pointer: fine) {
+      .tile:hover {
+        filter: brightness(1.06);
+      }
     }
 
     .tile.selected {
@@ -521,6 +526,14 @@
       return `${(col * 100) / (SIZE - 1)}% ${(row * 100) / (SIZE - 1)}%`;
     }
 
+    function clearTileFocus() {
+      window.requestAnimationFrame(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      });
+    }
+
     function playTone(kind) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
@@ -609,6 +622,7 @@
         const tile = document.createElement("button");
         tile.type = "button";
         tile.className = "tile";
+        tile.tabIndex = -1;
         tile.draggable = true;
         tile.style.backgroundPosition = tilePosition(tileNumber);
         tile.dataset.number = String(tileNumber + 1);
@@ -618,7 +632,10 @@
         if (tileNumber === slotIndex) tile.classList.add("correct");
         if (lastPopped.includes(slotIndex)) tile.classList.add("pop");
 
-        tile.addEventListener("click", () => selectOrSwap(slotIndex));
+        tile.addEventListener("click", event => {
+          event.currentTarget.blur();
+          selectOrSwap(slotIndex);
+        });
         tile.addEventListener("dragstart", event => {
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("text/plain", String(slotIndex));
@@ -637,6 +654,7 @@
       });
       updateStats();
       lastPopped = [];
+      clearTileFocus();
     }
 
     function celebrateIfBetter(before) {
@@ -668,9 +686,7 @@
       const before = countCorrect();
       [order[first], order[second]] = [order[second], order[first]];
       selectedIndex = null;
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
+      clearTileFocus();
       moves += assisted ? 0 : 1;
       lastPopped = [first, second].filter(index => order[index] === index);
       celebrateIfBetter(before);
@@ -680,9 +696,7 @@
     function selectOrSwap(slotIndex) {
       if (selectedIndex === slotIndex) {
         selectedIndex = null;
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
+        clearTileFocus();
         praiseEl.textContent = "\u5df2\u7ecf\u53d6\u6d88\u9009\u4e2d\uff0c\u518d\u9009\u4e00\u5757\u5427\u3002";
         render();
         return;
@@ -692,6 +706,7 @@
         selectedIndex = slotIndex;
         praiseEl.textContent = "\u518d\u70b9\u53e6\u4e00\u5757\uff0c\u8bd5\u8bd5\u770b\u3002";
         render();
+        clearTileFocus();
         return;
       }
       swapTiles(selectedIndex, slotIndex);
