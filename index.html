@@ -379,6 +379,18 @@
       box-shadow: 0 6px 0 #d39d24;
     }
 
+    button.danger {
+      background: #ff8a80;
+      color: #5c1612;
+      box-shadow: 0 6px 0 #d4564e;
+    }
+
+    button.danger.subtle {
+      background: #ffe0dc;
+      color: #8b312b;
+      box-shadow: 0 6px 0 #e5aaa3;
+    }
+
     .hint {
       margin: 0;
       color: var(--muted);
@@ -481,6 +493,8 @@
           <div class="import-controls">
             <input id="imageImport" class="file-input" type="file" accept="image/*" multiple>
             <button id="importBtn" class="secondary" type="button">导入新图片</button>
+            <button id="deleteImportedBtn" class="danger" type="button">删除当前导入图</button>
+            <button id="clearImportedBtn" class="danger subtle" type="button">清空导入图片</button>
             <p id="importNote" class="import-note">导入的图片只保存在这台设备上。</p>
           </div>
         </div>
@@ -522,6 +536,8 @@
     const levelPickerEl = document.getElementById("levelPicker");
     const imageImportEl = document.getElementById("imageImport");
     const importBtn = document.getElementById("importBtn");
+    const deleteImportedBtn = document.getElementById("deleteImportedBtn");
+    const clearImportedBtn = document.getElementById("clearImportedBtn");
     const importNoteEl = document.getElementById("importNote");
     const shuffleBtn = document.getElementById("shuffleBtn");
     const nextBtn = document.getElementById("nextBtn");
@@ -537,6 +553,14 @@
 
     function currentImage() {
       return levels[currentLevel].image;
+    }
+
+    function refreshLevels() {
+      levels = [...baseLevels, ...importedLevels];
+    }
+
+    function isImportedLevel(levelIndex = currentLevel) {
+      return levelIndex >= baseLevels.length;
     }
 
     function loadImportedLevels() {
@@ -559,6 +583,20 @@
 
     function saveImportedLevels() {
       window.localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(importedLevels));
+    }
+
+    function shiftCompletedAfterDelete(deletedIndex) {
+      completedLevels = new Set(
+        Array.from(completedLevels)
+          .filter(index => index !== deletedIndex)
+          .map(index => index > deletedIndex ? index - 1 : index)
+      );
+    }
+
+    function keepOnlyBuiltInCompleted() {
+      completedLevels = new Set(
+        Array.from(completedLevels).filter(index => index < baseLevels.length)
+      );
     }
 
     function makeShuffledOrder() {
@@ -695,7 +733,7 @@
       }
 
       importedLevels = [...importedLevels, ...nextLevels];
-      levels = [...baseLevels, ...importedLevels];
+      refreshLevels();
       try {
         saveImportedLevels();
         importNoteEl.textContent = `\u5df2\u5bfc\u5165 ${nextLevels.length} \u5f20\u56fe\u7247\uff0c\u5df2\u4fdd\u5b58\u5728\u8fd9\u53f0\u8bbe\u5907\u4e0a\u3002`;
@@ -706,6 +744,55 @@
       imageImportEl.value = "";
       importBtn.disabled = false;
       startLevel(baseLevels.length + importedStart);
+    }
+
+    function deleteCurrentImportedLevel() {
+      if (!isImportedLevel()) {
+        importNoteEl.textContent = "\u53ea\u80fd\u5220\u9664\u81ea\u5df1\u5bfc\u5165\u7684\u56fe\u7247\u3002";
+        return;
+      }
+
+      const level = levels[currentLevel];
+      const confirmed = window.confirm(`\u5220\u9664\u201c${level.name}\u201d\uff1f\u8fd9\u53ea\u4f1a\u5220\u9664\u8fd9\u53f0\u8bbe\u5907\u4e0a\u7684\u5bfc\u5165\u56fe\u7247\u3002`);
+      if (!confirmed) return;
+
+      const deletedIndex = currentLevel;
+      const importedIndex = deletedIndex - baseLevels.length;
+      importedLevels.splice(importedIndex, 1);
+      refreshLevels();
+      shiftCompletedAfterDelete(deletedIndex);
+
+      try {
+        saveImportedLevels();
+        importNoteEl.textContent = `\u5df2\u5220\u9664\u201c${level.name}\u201d\u3002`;
+      } catch {
+        importNoteEl.textContent = "\u5df2\u5220\u9664\uff0c\u4f46\u672c\u673a\u4fdd\u5b58\u72b6\u6001\u53ef\u80fd\u672a\u66f4\u65b0\u3002";
+      }
+
+      startLevel(Math.min(deletedIndex, levels.length - 1));
+    }
+
+    function clearImportedLevels() {
+      if (importedLevels.length === 0) {
+        importNoteEl.textContent = "\u8fd8\u6ca1\u6709\u5bfc\u5165\u56fe\u7247\u3002";
+        return;
+      }
+
+      const confirmed = window.confirm(`\u6e05\u7a7a ${importedLevels.length} \u5f20\u5bfc\u5165\u56fe\u7247\uff1f\u5185\u7f6e\u56fe\u7247\u4f1a\u4fdd\u7559\u3002`);
+      if (!confirmed) return;
+
+      importedLevels = [];
+      refreshLevels();
+      keepOnlyBuiltInCompleted();
+
+      try {
+        saveImportedLevels();
+        importNoteEl.textContent = "\u5df2\u6e05\u7a7a\u6240\u6709\u5bfc\u5165\u56fe\u7247\u3002";
+      } catch {
+        importNoteEl.textContent = "\u5df2\u6e05\u7a7a\uff0c\u4f46\u672c\u673a\u4fdd\u5b58\u72b6\u6001\u53ef\u80fd\u672a\u66f4\u65b0\u3002";
+      }
+
+      startLevel(Math.min(currentLevel, baseLevels.length - 1));
     }
 
     function syncLevelImage() {
@@ -731,6 +818,8 @@
       movesEl.textContent = String(moves);
       helpBtn.disabled = correct === TOTAL;
       nextBtn.disabled = currentLevel === levels.length - 1 && correct !== TOTAL;
+      deleteImportedBtn.disabled = !isImportedLevel();
+      clearImportedBtn.disabled = importedLevels.length === 0;
       renderLevelPicker();
     }
 
@@ -811,7 +900,7 @@
         playTone("win");
         throwConfetti();
         if (completedLevels.size === levels.length) {
-          praiseEl.textContent = "9 \u5f20\u56fe\u7247\u90fd\u5b8c\u6210\u5566\uff0c\u5956\u7ae0\u6536\u96c6\u6ee1\u4e86\uff01";
+          praiseEl.textContent = `${levels.length} \u5f20\u56fe\u7247\u90fd\u5b8c\u6210\u5566\uff0c\u5956\u7ae0\u6536\u96c6\u6ee1\u4e86\uff01`;
         } else if (firstCompletion) {
           praiseEl.textContent = `\u7b2c ${currentLevel + 1} \u5173\u5b8c\u6210\u5566\uff0c\u70b9\u201c\u4e0b\u4e00\u5f20\u201d\u7ee7\u7eed\u3002`;
         } else {
@@ -904,6 +993,8 @@
     solveBtn.addEventListener("click", solve);
     importBtn.addEventListener("click", () => imageImportEl.click());
     imageImportEl.addEventListener("change", event => importImages(event.target.files));
+    deleteImportedBtn.addEventListener("click", deleteCurrentImportedLevel);
+    clearImportedBtn.addEventListener("click", clearImportedLevels);
     startLevel(0);
 
     if ("serviceWorker" in navigator) {
