@@ -243,6 +243,31 @@
       gap: 9px;
     }
 
+    .import-controls {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .import-note {
+      min-height: 20px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
     .level-thumb {
       position: relative;
       min-height: 0;
@@ -293,6 +318,10 @@
       color: #17452e;
       font-size: 12px;
       font-weight: 900;
+    }
+
+    .level-thumb.imported span {
+      background: rgba(189, 47, 104, 0.82);
     }
 
     .actions {
@@ -449,6 +478,11 @@
         <div class="panel">
           <h2>选择图片</h2>
           <div id="levelPicker" class="level-picker" aria-label="选择关卡"></div>
+          <div class="import-controls">
+            <input id="imageImport" class="file-input" type="file" accept="image/*" multiple>
+            <button id="importBtn" class="secondary" type="button">导入新图片</button>
+            <p id="importNote" class="import-note">导入的图片只保存在这台设备上。</p>
+          </div>
         </div>
         <div class="panel">
           <p class="hint">玩法很简单：先点一块，再点另一块，它们就会换位置。绿色边框表示这块已经放对啦。</p>
@@ -461,10 +495,13 @@
   <script>
     const SIZE = 3;
     const TOTAL = SIZE * SIZE;
-    const levels = Array.from({ length: 9 }, (_, index) => ({
+    const IMPORT_STORAGE_KEY = "peppa-puzzle-imported-images-v1";
+    const baseLevels = Array.from({ length: 9 }, (_, index) => ({
       name: `\u7b2c ${index + 1} \u5173`,
       image: `peppa${index + 1}.jpg`
     }));
+    let importedLevels = loadImportedLevels();
+    let levels = [...baseLevels, ...importedLevels];
     const cheers = [
       "\u771f\u68d2\uff0c\u53c8\u653e\u5bf9\u4e00\u5757\uff01",
       "\u597d\u5389\u5bb3\uff0c\u7ee7\u7eed\u627e\u4e00\u627e\uff01",
@@ -483,6 +520,9 @@
     const levelNameEl = document.getElementById("levelName");
     const levelProgressEl = document.getElementById("levelProgress");
     const levelPickerEl = document.getElementById("levelPicker");
+    const imageImportEl = document.getElementById("imageImport");
+    const importBtn = document.getElementById("importBtn");
+    const importNoteEl = document.getElementById("importNote");
     const shuffleBtn = document.getElementById("shuffleBtn");
     const nextBtn = document.getElementById("nextBtn");
     const helpBtn = document.getElementById("helpBtn");
@@ -497,6 +537,28 @@
 
     function currentImage() {
       return levels[currentLevel].image;
+    }
+
+    function loadImportedLevels() {
+      try {
+        const stored = window.localStorage.getItem(IMPORT_STORAGE_KEY);
+        if (!stored) return [];
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter(item => item && typeof item.name === "string" && typeof item.image === "string")
+          .map(item => ({
+            name: item.name,
+            image: item.image,
+            imported: true
+          }));
+      } catch {
+        return [];
+      }
+    }
+
+    function saveImportedLevels() {
+      window.localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(importedLevels));
     }
 
     function makeShuffledOrder() {
@@ -564,6 +626,88 @@
       }, 1600);
     }
 
+    function makeImportedName(file, fallbackNumber) {
+      const baseName = file.name.replace(/\.[^.]+$/, "").trim();
+      return (baseName || `\u6211\u7684\u56fe\u7247 ${fallbackNumber}`).slice(0, 18);
+    }
+
+    function resizeImageFile(file, fallbackNumber) {
+      return new Promise((resolve, reject) => {
+        if (!file.type.startsWith("image/")) {
+          reject(new Error("not image"));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("image failed"));
+          img.onload = () => {
+            const maxSide = 1400;
+            const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+            const width = Math.max(1, Math.round(img.naturalWidth * scale));
+            const height = Math.max(1, Math.round(img.naturalHeight * scale));
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext("2d");
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, width, height);
+            context.drawImage(img, 0, 0, width, height);
+
+            resolve({
+              name: makeImportedName(file, fallbackNumber),
+              image: canvas.toDataURL("image/jpeg", 0.86),
+              imported: true
+            });
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function importImages(files) {
+      const imageFiles = Array.from(files || []).filter(file => file.type.startsWith("image/"));
+      if (imageFiles.length === 0) {
+        importNoteEl.textContent = "\u6ca1\u6709\u9009\u5230\u56fe\u7247\u6587\u4ef6\u3002";
+        return;
+      }
+
+      importBtn.disabled = true;
+      importNoteEl.textContent = "\u6b63\u5728\u5bfc\u5165\u56fe\u7247...";
+
+      const importedStart = importedLevels.length;
+      const nextLevels = [];
+      for (const file of imageFiles) {
+        try {
+          nextLevels.push(await resizeImageFile(file, importedStart + nextLevels.length + 1));
+        } catch {
+          // Skip images the browser cannot decode.
+        }
+      }
+
+      if (nextLevels.length === 0) {
+        importBtn.disabled = false;
+        importNoteEl.textContent = "\u8fd9\u4e9b\u56fe\u7247\u6682\u65f6\u65e0\u6cd5\u5bfc\u5165\u3002";
+        return;
+      }
+
+      importedLevels = [...importedLevels, ...nextLevels];
+      levels = [...baseLevels, ...importedLevels];
+      try {
+        saveImportedLevels();
+        importNoteEl.textContent = `\u5df2\u5bfc\u5165 ${nextLevels.length} \u5f20\u56fe\u7247\uff0c\u5df2\u4fdd\u5b58\u5728\u8fd9\u53f0\u8bbe\u5907\u4e0a\u3002`;
+      } catch {
+        importNoteEl.textContent = `\u5df2\u52a0\u5165 ${nextLevels.length} \u5f20\u56fe\u7247\uff0c\u4f46\u672c\u673a\u7a7a\u95f4\u4e0d\u8db3\uff0c\u5237\u65b0\u540e\u53ef\u80fd\u4f1a\u6d88\u5931\u3002`;
+      }
+
+      imageImportEl.value = "";
+      importBtn.disabled = false;
+      startLevel(baseLevels.length + importedStart);
+    }
+
     function syncLevelImage() {
       const image = currentImage();
       document.documentElement.style.setProperty("--puzzle-image", `url("${image}")`);
@@ -598,6 +742,7 @@
         button.className = "level-thumb";
         if (index === currentLevel) button.classList.add("active");
         if (completedLevels.has(index)) button.classList.add("done");
+        if (level.imported) button.classList.add("imported");
         button.setAttribute("aria-label", `\u9009\u62e9${level.name}`);
 
         const img = document.createElement("img");
@@ -757,6 +902,8 @@
     nextBtn.addEventListener("click", nextLevel);
     helpBtn.addEventListener("click", helpOneTile);
     solveBtn.addEventListener("click", solve);
+    importBtn.addEventListener("click", () => imageImportEl.click());
+    imageImportEl.addEventListener("change", event => importImages(event.target.files));
     startLevel(0);
 
     if ("serviceWorker" in navigator) {

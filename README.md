@@ -10,6 +10,8 @@
 - `icons/`：主屏幕图标
 - `peppa1.jpg` 到 `peppa9.jpg`：9 个关卡图片
 
+游戏支持在浏览器里导入新图片。导入图片只会保存在当前设备的浏览器本地存储中，不会上传到服务器。
+
 ## GitHub Pages 部署
 
 1. 在 GitHub 新建一个仓库，例如 `peppa-puzzle`。
