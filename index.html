@@ -123,6 +123,7 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
+      position: relative;
       aspect-ratio: var(--puzzle-ratio);
       width: 100%;
       overflow: hidden;
@@ -186,6 +187,30 @@
 
     .tile.pop {
       animation: pop 360ms ease;
+    }
+
+    .seam-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 12;
+    }
+
+    .seam-layer path {
+      fill: none;
+      stroke: rgba(30, 43, 68, 0.42);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .seam-layer .seam-highlight {
+      stroke: rgba(255, 255, 255, 0.72);
+      stroke-width: 0.8;
+      transform: translate(-0.8px, -0.8px);
     }
 
     .side {
@@ -621,6 +646,84 @@
       return `${(col * 100) / (SIZE - 1)}% ${(row * 100) / (SIZE - 1)}%`;
     }
 
+    function verticalSeamPath(x, y0, y1, direction) {
+      const height = y1 - y0;
+      const a = y0 + height * 0.32;
+      const b = y0 + height * 0.46;
+      const c = y0 + height * 0.54;
+      const d = y0 + height * 0.68;
+      const bulge = 17 * direction;
+      return [
+        `M ${x} ${y0}`,
+        `L ${x} ${a}`,
+        `C ${x + bulge} ${a + 3}, ${x + bulge} ${b - 3}, ${x} ${b}`,
+        `C ${x - bulge} ${b + 4}, ${x - bulge} ${c - 4}, ${x} ${c}`,
+        `C ${x + bulge} ${c + 3}, ${x + bulge} ${d - 3}, ${x} ${d}`,
+        `L ${x} ${y1}`
+      ].join(" ");
+    }
+
+    function horizontalSeamPath(y, x0, x1, direction) {
+      const width = x1 - x0;
+      const a = x0 + width * 0.32;
+      const b = x0 + width * 0.46;
+      const c = x0 + width * 0.54;
+      const d = x0 + width * 0.68;
+      const bulge = 17 * direction;
+      return [
+        `M ${x0} ${y}`,
+        `L ${a} ${y}`,
+        `C ${a + 3} ${y + bulge}, ${b - 3} ${y + bulge}, ${b} ${y}`,
+        `C ${b + 4} ${y - bulge}, ${c - 4} ${y - bulge}, ${c} ${y}`,
+        `C ${c + 3} ${y + bulge}, ${d - 3} ${y + bulge}, ${d} ${y}`,
+        `L ${x1} ${y}`
+      ].join(" ");
+    }
+
+    function makePuzzleSeams() {
+      const paths = [];
+      const cell = 100;
+      for (let col = 1; col < SIZE; col += 1) {
+        const x = col * cell;
+        for (let row = 0; row < SIZE; row += 1) {
+          const direction = (row + col) % 2 === 0 ? 1 : -1;
+          paths.push(verticalSeamPath(x, row * cell, (row + 1) * cell, direction));
+        }
+      }
+
+      for (let row = 1; row < SIZE; row += 1) {
+        const y = row * cell;
+        for (let col = 0; col < SIZE; col += 1) {
+          const direction = (row + col) % 2 === 0 ? -1 : 1;
+          paths.push(horizontalSeamPath(y, col * cell, (col + 1) * cell, direction));
+        }
+      }
+
+      return paths;
+    }
+
+    function renderPuzzleSeams() {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("seam-layer");
+      svg.setAttribute("viewBox", "0 0 300 300");
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("aria-hidden", "true");
+
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      for (const pathData of makePuzzleSeams()) {
+        const highlight = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        highlight.classList.add("seam-highlight");
+        highlight.setAttribute("d", pathData);
+        group.appendChild(highlight);
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", pathData);
+        group.appendChild(path);
+      }
+      svg.appendChild(group);
+      board.appendChild(svg);
+    }
+
     function clearTileFocus() {
       window.requestAnimationFrame(() => {
         if (document.activeElement instanceof HTMLElement) {
@@ -880,6 +983,7 @@
 
         board.appendChild(tile);
       });
+      renderPuzzleSeams();
       updateStats();
       lastPopped = [];
       clearTileFocus();
