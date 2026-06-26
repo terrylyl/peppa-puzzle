@@ -666,26 +666,26 @@
 
     function topEdge(edge) {
       if (edge === 0) return "L 100 0";
-      const amp = -edge * 14;
-      return `L 34 0 C 39 0 39 ${amp} 45 ${amp} C 50 ${amp} 50 ${amp} 55 ${amp} C 61 ${amp} 61 0 66 0 L 100 0`;
+      const amp = -edge * 18;
+      return `L 35 0 C 38 0 39 ${amp * 0.42} 43 ${amp * 0.56} C 45 ${amp * 0.92} 48 ${amp} 50 ${amp} C 52 ${amp} 55 ${amp * 0.92} 57 ${amp * 0.56} C 61 ${amp * 0.42} 62 0 65 0 L 100 0`;
     }
 
     function rightEdge(edge) {
       if (edge === 0) return "L 100 100";
-      const amp = edge * 14;
-      return `L 100 34 C 100 39 ${100 + amp} 39 ${100 + amp} 45 C ${100 + amp} 50 ${100 + amp} 50 ${100 + amp} 55 C ${100 + amp} 61 100 61 100 66 L 100 100`;
+      const amp = edge * 18;
+      return `L 100 35 C 100 38 ${100 + amp * 0.42} 39 ${100 + amp * 0.56} 43 C ${100 + amp * 0.92} 45 ${100 + amp} 48 ${100 + amp} 50 C ${100 + amp} 52 ${100 + amp * 0.92} 55 ${100 + amp * 0.56} 57 C ${100 + amp * 0.42} 61 100 62 100 65 L 100 100`;
     }
 
     function bottomEdge(edge) {
       if (edge === 0) return "L 0 100";
-      const amp = edge * 14;
-      return `L 66 100 C 61 100 61 ${100 + amp} 55 ${100 + amp} C 50 ${100 + amp} 50 ${100 + amp} 45 ${100 + amp} C 39 ${100 + amp} 39 100 34 100 L 0 100`;
+      const amp = edge * 18;
+      return `L 65 100 C 62 100 61 ${100 + amp * 0.42} 57 ${100 + amp * 0.56} C 55 ${100 + amp * 0.92} 52 ${100 + amp} 50 ${100 + amp} C 48 ${100 + amp} 45 ${100 + amp * 0.92} 43 ${100 + amp * 0.56} C 39 ${100 + amp * 0.42} 38 100 35 100 L 0 100`;
     }
 
     function leftEdge(edge) {
       if (edge === 0) return "L 0 0";
-      const amp = -edge * 14;
-      return `L 0 66 C 0 61 ${amp} 61 ${amp} 55 C ${amp} 50 ${amp} 50 ${amp} 45 C ${amp} 39 0 39 0 34 L 0 0`;
+      const amp = -edge * 18;
+      return `L 0 65 C 0 62 ${amp * 0.42} 61 ${amp * 0.56} 57 C ${amp * 0.92} 55 ${amp} 52 ${amp} 50 C ${amp} 48 ${amp * 0.92} 45 ${amp * 0.56} 43 C ${amp * 0.42} 39 0 38 0 35 L 0 0`;
     }
 
     function piecePath(tileNumber) {
@@ -710,7 +710,7 @@
       const pathData = piecePath(tileNumber);
       const image = currentImage();
       const svg = makeSvgElement("svg");
-      svg.setAttribute("viewBox", "-16 -16 132 132");
+      svg.setAttribute("viewBox", "-20 -20 140 140");
       svg.setAttribute("preserveAspectRatio", "none");
       svg.setAttribute("aria-hidden", "true");
 
@@ -975,7 +975,7 @@
     function render() {
       board.innerHTML = "";
       const cell = 100 / SIZE;
-      const tab = cell * 0.16;
+      const tab = cell * 0.2;
       order.forEach((tileNumber, slotIndex) => {
         const slotRow = Math.floor(slotIndex / SIZE);
         const slotCol = slotIndex % SIZE;
