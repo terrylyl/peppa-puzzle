@@ -120,9 +120,6 @@
     }
 
     .board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
       position: relative;
       aspect-ratio: var(--puzzle-ratio);
       width: 100%;
@@ -136,24 +133,20 @@
       -webkit-appearance: none;
       appearance: none;
       -webkit-tap-highlight-color: transparent;
-      position: relative;
-      width: 100%;
-      height: 100%;
+      position: absolute;
       border: 0;
-      background-color: #ffe8f0;
-      background-image: var(--puzzle-image);
-      background-size: 300% 300%;
+      background: transparent;
       cursor: pointer;
-      transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
+      overflow: visible;
+      transition: transform 150ms ease, filter 150ms ease;
       touch-action: manipulation;
-      box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
     }
 
     .tile::after {
       content: attr(data-number);
       position: absolute;
-      right: 8px;
-      bottom: 6px;
+      right: 12%;
+      bottom: 12%;
       width: 28px;
       height: 28px;
       border-radius: 50%;
@@ -174,43 +167,47 @@
     .tile.selected {
       z-index: 2;
       transform: scale(0.985);
-      box-shadow:
-        inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
-        inset 0 0 0 4px rgba(255, 209, 102, 0.92);
     }
 
-    .tile.correct {
-      box-shadow:
-        inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
-        inset 0 0 0 2px rgba(115, 214, 162, 0.68);
+    .tile svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 2px 3px rgba(32, 42, 65, 0.18));
+    }
+
+    .piece-outline,
+    .piece-highlight {
+      fill: none;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .piece-outline {
+      stroke: rgba(28, 38, 61, 0.38);
+      stroke-width: 1.25;
+    }
+
+    .piece-highlight {
+      stroke: rgba(255, 255, 255, 0.78);
+      stroke-width: 0.75;
+      transform: translate(-0.6px, -0.6px);
+    }
+
+    .tile.selected .piece-outline {
+      stroke: rgba(255, 209, 102, 0.98);
+      stroke-width: 3;
+    }
+
+    .tile.correct .piece-outline {
+      stroke: rgba(83, 185, 122, 0.82);
+      stroke-width: 2.1;
     }
 
     .tile.pop {
       animation: pop 360ms ease;
-    }
-
-    .seam-layer {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 12;
-    }
-
-    .seam-layer path {
-      fill: none;
-      stroke: rgba(30, 43, 68, 0.42);
-      stroke-width: 1.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      vector-effect: non-scaling-stroke;
-    }
-
-    .seam-layer .seam-highlight {
-      stroke: rgba(255, 255, 255, 0.72);
-      stroke-width: 0.8;
-      transform: translate(-0.8px, -0.8px);
     }
 
     .side {
@@ -646,82 +643,109 @@
       return `${(col * 100) / (SIZE - 1)}% ${(row * 100) / (SIZE - 1)}%`;
     }
 
-    function verticalSeamPath(x, y0, y1, direction) {
-      const height = y1 - y0;
-      const a = y0 + height * 0.32;
-      const b = y0 + height * 0.46;
-      const c = y0 + height * 0.54;
-      const d = y0 + height * 0.68;
-      const bulge = 17 * direction;
+    function pieceEdges(tileNumber) {
+      const row = Math.floor(tileNumber / SIZE);
+      const col = tileNumber % SIZE;
+      const vertical = [
+        [1, -1],
+        [-1, 1],
+        [1, -1]
+      ];
+      const horizontal = [
+        [-1, 1, -1],
+        [1, -1, 1]
+      ];
+
+      return {
+        top: row === 0 ? 0 : -horizontal[row - 1][col],
+        right: col === SIZE - 1 ? 0 : vertical[row][col],
+        bottom: row === SIZE - 1 ? 0 : horizontal[row][col],
+        left: col === 0 ? 0 : -vertical[row][col - 1]
+      };
+    }
+
+    function topEdge(edge) {
+      if (edge === 0) return "L 100 0";
+      const amp = -edge * 14;
+      return `L 34 0 C 39 0 39 ${amp} 45 ${amp} C 50 ${amp} 50 ${amp} 55 ${amp} C 61 ${amp} 61 0 66 0 L 100 0`;
+    }
+
+    function rightEdge(edge) {
+      if (edge === 0) return "L 100 100";
+      const amp = edge * 14;
+      return `L 100 34 C 100 39 ${100 + amp} 39 ${100 + amp} 45 C ${100 + amp} 50 ${100 + amp} 50 ${100 + amp} 55 C ${100 + amp} 61 100 61 100 66 L 100 100`;
+    }
+
+    function bottomEdge(edge) {
+      if (edge === 0) return "L 0 100";
+      const amp = edge * 14;
+      return `L 66 100 C 61 100 61 ${100 + amp} 55 ${100 + amp} C 50 ${100 + amp} 50 ${100 + amp} 45 ${100 + amp} C 39 ${100 + amp} 39 100 34 100 L 0 100`;
+    }
+
+    function leftEdge(edge) {
+      if (edge === 0) return "L 0 0";
+      const amp = -edge * 14;
+      return `L 0 66 C 0 61 ${amp} 61 ${amp} 55 C ${amp} 50 ${amp} 50 ${amp} 45 C ${amp} 39 0 39 0 34 L 0 0`;
+    }
+
+    function piecePath(tileNumber) {
+      const edges = pieceEdges(tileNumber);
       return [
-        `M ${x} ${y0}`,
-        `L ${x} ${a}`,
-        `C ${x + bulge} ${a + 3}, ${x + bulge} ${b - 3}, ${x} ${b}`,
-        `C ${x - bulge} ${b + 4}, ${x - bulge} ${c - 4}, ${x} ${c}`,
-        `C ${x + bulge} ${c + 3}, ${x + bulge} ${d - 3}, ${x} ${d}`,
-        `L ${x} ${y1}`
+        "M 0 0",
+        topEdge(edges.top),
+        rightEdge(edges.right),
+        bottomEdge(edges.bottom),
+        leftEdge(edges.left),
+        "Z"
       ].join(" ");
     }
 
-    function horizontalSeamPath(y, x0, x1, direction) {
-      const width = x1 - x0;
-      const a = x0 + width * 0.32;
-      const b = x0 + width * 0.46;
-      const c = x0 + width * 0.54;
-      const d = x0 + width * 0.68;
-      const bulge = 17 * direction;
-      return [
-        `M ${x0} ${y}`,
-        `L ${a} ${y}`,
-        `C ${a + 3} ${y + bulge}, ${b - 3} ${y + bulge}, ${b} ${y}`,
-        `C ${b + 4} ${y - bulge}, ${c - 4} ${y - bulge}, ${c} ${y}`,
-        `C ${c + 3} ${y + bulge}, ${d - 3} ${y + bulge}, ${d} ${y}`,
-        `L ${x1} ${y}`
-      ].join(" ");
+    function makeSvgElement(name) {
+      return document.createElementNS("http://www.w3.org/2000/svg", name);
     }
 
-    function makePuzzleSeams() {
-      const paths = [];
-      const cell = 100;
-      for (let col = 1; col < SIZE; col += 1) {
-        const x = col * cell;
-        for (let row = 0; row < SIZE; row += 1) {
-          const direction = (row + col) % 2 === 0 ? 1 : -1;
-          paths.push(verticalSeamPath(x, row * cell, (row + 1) * cell, direction));
-        }
-      }
-
-      for (let row = 1; row < SIZE; row += 1) {
-        const y = row * cell;
-        for (let col = 0; col < SIZE; col += 1) {
-          const direction = (row + col) % 2 === 0 ? -1 : 1;
-          paths.push(horizontalSeamPath(y, col * cell, (col + 1) * cell, direction));
-        }
-      }
-
-      return paths;
-    }
-
-    function renderPuzzleSeams() {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.classList.add("seam-layer");
-      svg.setAttribute("viewBox", "0 0 300 300");
+    function renderPieceSvg(tileNumber, clipId) {
+      const row = Math.floor(tileNumber / SIZE);
+      const col = tileNumber % SIZE;
+      const pathData = piecePath(tileNumber);
+      const image = currentImage();
+      const svg = makeSvgElement("svg");
+      svg.setAttribute("viewBox", "-16 -16 132 132");
       svg.setAttribute("preserveAspectRatio", "none");
       svg.setAttribute("aria-hidden", "true");
 
-      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      for (const pathData of makePuzzleSeams()) {
-        const highlight = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        highlight.classList.add("seam-highlight");
-        highlight.setAttribute("d", pathData);
-        group.appendChild(highlight);
+      const defs = makeSvgElement("defs");
+      const clip = makeSvgElement("clipPath");
+      clip.setAttribute("id", clipId);
+      clip.setAttribute("clipPathUnits", "userSpaceOnUse");
+      const clipPath = makeSvgElement("path");
+      clipPath.setAttribute("d", pathData);
+      clip.appendChild(clipPath);
+      defs.appendChild(clip);
+      svg.appendChild(defs);
 
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", pathData);
-        group.appendChild(path);
-      }
-      svg.appendChild(group);
-      board.appendChild(svg);
+      const imageEl = makeSvgElement("image");
+      imageEl.setAttribute("href", image);
+      imageEl.setAttributeNS("http://www.w3.org/1999/xlink", "href", image);
+      imageEl.setAttribute("x", String(-col * 100));
+      imageEl.setAttribute("y", String(-row * 100));
+      imageEl.setAttribute("width", String(SIZE * 100));
+      imageEl.setAttribute("height", String(SIZE * 100));
+      imageEl.setAttribute("preserveAspectRatio", "none");
+      imageEl.setAttribute("clip-path", `url(#${clipId})`);
+      svg.appendChild(imageEl);
+
+      const highlight = makeSvgElement("path");
+      highlight.classList.add("piece-highlight");
+      highlight.setAttribute("d", pathData);
+      svg.appendChild(highlight);
+
+      const outline = makeSvgElement("path");
+      outline.classList.add("piece-outline");
+      outline.setAttribute("d", pathData);
+      svg.appendChild(outline);
+
+      return svg;
     }
 
     function clearTileFocus() {
@@ -950,14 +974,23 @@
 
     function render() {
       board.innerHTML = "";
+      const cell = 100 / SIZE;
+      const tab = cell * 0.16;
       order.forEach((tileNumber, slotIndex) => {
+        const slotRow = Math.floor(slotIndex / SIZE);
+        const slotCol = slotIndex % SIZE;
         const tile = document.createElement("div");
         tile.className = "tile";
         tile.role = "button";
         tile.draggable = true;
-        tile.style.backgroundPosition = tilePosition(tileNumber);
+        tile.style.left = `${slotCol * cell - tab}%`;
+        tile.style.top = `${slotRow * cell - tab}%`;
+        tile.style.width = `${cell + tab * 2}%`;
+        tile.style.height = `${cell + tab * 2}%`;
+        tile.style.zIndex = selectedIndex === slotIndex ? "30" : String(10 + slotIndex);
         tile.dataset.number = String(tileNumber + 1);
         tile.setAttribute("aria-label", `\u7b2c ${slotIndex + 1} \u683c`);
+        tile.appendChild(renderPieceSvg(tileNumber, `pieceClip-${slotIndex}-${tileNumber}`));
 
         if (selectedIndex === slotIndex) tile.classList.add("selected");
         if (tileNumber === slotIndex) tile.classList.add("correct");
@@ -983,7 +1016,6 @@
 
         board.appendChild(tile);
       });
-      renderPuzzleSeams();
       updateStats();
       lastPopped = [];
       clearTileFocus();
