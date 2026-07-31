@@ -67,9 +67,9 @@
       transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease, opacity 150ms ease;
     }
 
-    button:hover { background: #dc3f75; }
+    button:not(.tile):hover { background-color: #dc3f75; }
 
-    button:active {
+    button:not(.tile):active {
       box-shadow: 0 2px 0 var(--pink-dark);
       transform: translateY(3px);
     }
