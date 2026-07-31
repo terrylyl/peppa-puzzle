@@ -1236,6 +1236,7 @@
     }
 
     function finishMoveFeedback(before, assisted, changedTiles) {
+      selectedTile = null;
       const after = countCorrect();
       if (after > before) {
         praiseEl.textContent = cheers[Math.floor(Math.random() * cheers.length)];
@@ -1394,6 +1395,8 @@
 
       if (!pointerSession.dragged) {
         pointerSession.dragged = true;
+        selectedTile = null;
+        updateTileAccessibility();
         motions[pointerSession.tileNumber].dragging = true;
         tileElements[pointerSession.tileNumber].classList.add("dragging");
       }
