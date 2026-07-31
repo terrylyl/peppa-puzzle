@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>佩奇 3x3 拼图</title>
   <meta name="description" content="适合小朋友玩的佩奇 3x3 拼图游戏。">
   <meta name="theme-color" content="#f06292">
@@ -15,201 +15,384 @@
   <style>
     :root {
       --ink: #21314d;
-      --muted: #65738e;
+      --muted: #52627d;
       --paper: #fffdf8;
-      --line: #ecd7ad;
-      --pink: #f06292;
-      --pink-dark: #cf3d73;
+      --line: #e7d7b9;
+      --pink: #e94f84;
+      --pink-dark: #b62d62;
       --sun: #ffd166;
+      --sun-dark: #b37b00;
       --mint: #73d6a2;
+      --mint-dark: #287b52;
       --sky: #88c9ff;
+      --sky-dark: #276792;
       --cream: #fff6da;
       --puzzle-ratio: 16 / 9;
-      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --shadow-board: 0 20px 42px rgba(50, 63, 99, 0.18);
+      --shadow-panel: 0 8px 20px rgba(79, 55, 20, 0.1);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
+
+    html { min-width: 0; }
 
     body {
-      margin: 0;
+      min-width: 0;
       min-height: 100vh;
+      margin: 0;
       color: var(--ink);
       background:
-        radial-gradient(circle at 16% 12%, rgba(255, 209, 102, 0.45), transparent 25%),
-        radial-gradient(circle at 86% 20%, rgba(115, 214, 162, 0.35), transparent 24%),
+        radial-gradient(circle at 12% 8%, rgba(255, 209, 102, 0.42), transparent 24%),
+        radial-gradient(circle at 90% 20%, rgba(115, 214, 162, 0.3), transparent 25%),
         linear-gradient(180deg, #dff3ff 0%, #fff5da 100%);
       overflow-x: hidden;
     }
 
+    button, input { font: inherit; }
+
+    button {
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      color: #fff;
+      background: var(--pink);
+      box-shadow: 0 5px 0 var(--pink-dark);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transform: translateY(0);
+      transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease, opacity 150ms ease;
+    }
+
+    button:hover { background: #dc3f75; }
+
+    button:active {
+      box-shadow: 0 2px 0 var(--pink-dark);
+      transform: translateY(3px);
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: 0.55;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button:focus-visible,
+    summary:focus-visible,
+    .preview-trigger:focus-visible {
+      outline: 4px solid rgba(255, 177, 0, 0.85);
+      outline-offset: 3px;
+    }
+
+    button.secondary {
+      color: #204b6f;
+      background: var(--sky);
+      box-shadow: 0 5px 0 var(--sky-dark);
+    }
+
+    button.secondary:hover { background: #73baf2; }
+
+    button.helper {
+      color: #164c31;
+      background: var(--mint);
+      box-shadow: 0 5px 0 var(--mint-dark);
+    }
+
+    button.helper:hover { background: #60cb94; }
+
+    button.next {
+      color: #543800;
+      background: var(--sun);
+      box-shadow: 0 5px 0 var(--sun-dark);
+    }
+
+    button.next:hover { background: #ffd977; }
+
+    button.danger {
+      color: #681d19;
+      background: #ffb5ad;
+      box-shadow: 0 5px 0 #c2635c;
+    }
+
+    button.danger.subtle {
+      color: #7b3730;
+      background: #ffe0dc;
+      box-shadow: 0 5px 0 #dda19b;
+    }
+
     main {
-      width: min(1120px, calc(100vw - 28px));
+      width: min(1160px, calc(100vw - 32px));
       margin: 0 auto;
-      padding: 22px 0 28px;
+      padding: 24px 0 calc(32px + env(safe-area-inset-bottom));
     }
 
     .topbar {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 14px;
+      gap: 18px;
+      margin-bottom: 10px;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(30px, 5vw, 52px);
-      line-height: 1.02;
-      letter-spacing: 0;
       color: #28385c;
+      font-size: clamp(32px, 5vw, 54px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
     }
 
-    .praise {
-      min-height: 34px;
-      margin: 0 0 14px;
-      color: #bd2f68;
-      font-size: clamp(18px, 3vw, 25px);
-      font-weight: 800;
+    .brand-note {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
     }
+
+    .topbar-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sound-toggle {
+      min-height: 42px;
+      padding: 0 14px;
+      color: #51430d;
+      background: rgba(255, 253, 248, 0.88);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 0 rgba(179, 123, 0, 0.5);
+      white-space: nowrap;
+    }
+
+    .sound-toggle:hover { background: #fffdf8; }
 
     .stats {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      width: min(480px, 100%);
+      margin-bottom: 16px;
     }
 
     .stat {
-      min-width: 88px;
-      padding: 9px 12px;
-      border: 2px solid rgba(255, 255, 255, 0.9);
-      border-radius: 8px;
-      background: rgba(255, 253, 248, 0.9);
-      box-shadow: 0 8px 20px rgba(79, 55, 20, 0.12);
+      min-width: 0;
+      padding: 9px 10px;
+      border: 2px solid rgba(255, 255, 255, 0.86);
+      border-radius: 14px;
+      background: rgba(255, 253, 248, 0.82);
+      box-shadow: var(--shadow-panel);
       text-align: center;
     }
 
     .stat span {
       display: block;
+      overflow: hidden;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .stat strong {
       display: block;
       margin-top: 2px;
-      font-size: 22px;
+      font-size: clamp(18px, 3vw, 23px);
+      font-weight: 800;
+      line-height: 1.05;
     }
 
-    .layout {
+    .praise {
+      min-height: 31px;
+      margin: 0 0 14px;
+      color: #a82e61;
+      font-size: clamp(17px, 2.6vw, 23px);
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .game-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 290px;
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      grid-template-areas: "board side";
+      gap: 22px;
       align-items: start;
     }
 
     .board-shell {
-      position: relative;
+      grid-area: board;
       min-width: 0;
-      padding: 10px;
-      border-radius: 18px;
-      background: rgba(255, 253, 248, 0.74);
-      box-shadow: 0 20px 45px rgba(50, 63, 99, 0.18);
+      padding: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 253, 248, 0.7);
+      box-shadow: var(--shadow-board);
     }
 
     .board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      aspect-ratio: var(--puzzle-ratio);
+      position: relative;
       width: 100%;
+      aspect-ratio: var(--puzzle-ratio);
       overflow: hidden;
-      border: 3px solid #ffffff;
-      border-radius: 14px;
+      border: 3px solid #fff;
+      border-radius: 16px;
       background: #cdd5e2;
+      isolation: isolate;
+      touch-action: none;
+    }
+
+    .slot-guide {
+      position: absolute;
+      z-index: 0;
+      width: 33.333333%;
+      height: 33.333333%;
+      border: 2px solid transparent;
+      border-radius: 7px;
+      pointer-events: none;
+      transition: border-color 120ms ease, background-color 120ms ease;
+    }
+
+    .slot-guide.target {
+      border-color: rgba(255, 209, 102, 0.98);
+      background: rgba(255, 209, 102, 0.22);
     }
 
     .tile {
-      -webkit-appearance: none;
-      appearance: none;
-      -webkit-tap-highlight-color: transparent;
-      position: relative;
-      width: 100%;
-      height: 100%;
+      position: absolute;
+      z-index: 1;
+      top: 0;
+      left: 0;
+      width: 33.333333%;
+      height: 33.333333%;
+      padding: 0;
+      overflow: hidden;
       border: 0;
+      border-radius: 0;
       background-color: #ffe8f0;
       background-image: var(--puzzle-image);
       background-size: 300% 300%;
-      cursor: pointer;
-      transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease;
-      touch-action: manipulation;
+      background-repeat: no-repeat;
       box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
+      cursor: grab;
+      touch-action: none;
+      will-change: transform;
+      transition: filter 150ms ease, box-shadow 150ms ease;
     }
+
+    .tile:active { cursor: grabbing; }
 
     .tile::after {
       content: attr(data-number);
       position: absolute;
       right: 8px;
       bottom: 6px;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
       display: grid;
+      width: 27px;
+      height: 27px;
       place-items: center;
-      color: #ffffff;
+      border-radius: 50%;
+      color: #fff;
       background: rgba(33, 49, 77, 0.68);
-      font-size: 15px;
-      font-weight: 900;
+      font-size: 14px;
+      font-weight: 800;
     }
 
     @media (hover: hover) and (pointer: fine) {
-      .tile:hover {
-        filter: brightness(1.06);
-      }
+      .tile:hover { filter: brightness(1.06); }
     }
 
     .tile.selected {
-      z-index: 2;
-      transform: scale(0.985);
+      z-index: 3;
       box-shadow:
-        inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
-        inset 0 0 0 4px rgba(255, 209, 102, 0.92);
+        inset 0 0 0 4px rgba(255, 209, 102, 0.98),
+        0 0 0 2px rgba(179, 123, 0, 0.45);
+    }
+
+    .tile.pressed { filter: brightness(1.08); }
+
+    .tile.dragging {
+      z-index: 5;
+      filter: brightness(1.06) drop-shadow(0 11px 10px rgba(33, 49, 77, 0.24));
     }
 
     .tile.correct {
       box-shadow:
-        inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
-        inset 0 0 0 2px rgba(115, 214, 162, 0.68);
+        inset 0 0 0 2px rgba(40, 123, 82, 0.88),
+        inset 0 0 0 4px rgba(115, 214, 162, 0.35);
     }
 
-    .tile.pop {
-      animation: pop 360ms ease;
+    .tile.correct-flash { animation: correct-flash 280ms ease-out; }
+
+    @keyframes correct-flash {
+      50% { filter: brightness(1.08); transform: translate3d(var(--x), var(--y), 0) scale(1.02); }
     }
 
     .side {
+      grid-area: side;
       display: grid;
       gap: 14px;
       min-width: 0;
     }
 
     .panel {
-      padding: 14px;
-      border: 2px solid rgba(255, 255, 255, 0.86);
-      border-radius: 14px;
-      background: rgba(255, 253, 248, 0.92);
-      box-shadow: 0 12px 28px rgba(79, 55, 20, 0.12);
+      min-width: 0;
+      padding: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.84);
+      border-radius: var(--radius-md);
+      background: rgba(255, 253, 248, 0.9);
+      box-shadow: var(--shadow-panel);
     }
 
-    .preview {
+    .core-actions {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 9px;
+      padding: 12px;
+      order: -1;
+    }
+
+    .core-actions .helper { grid-column: 1 / -1; }
+
+    .core-actions .next { grid-column: 1 / -1; }
+
+    .preview-trigger {
+      position: relative;
+      display: block;
+      width: 100%;
+      min-height: 0;
+      padding: 0;
+      overflow: hidden;
+      border: 3px solid #fff;
+      border-radius: 13px;
+      background: #fff2cf;
+      box-shadow: 0 4px 0 #d2b36c;
+      color: var(--ink);
+    }
+
+    .preview-trigger img {
       display: block;
       width: 100%;
       aspect-ratio: var(--puzzle-ratio);
       object-fit: contain;
-      background: #fff2cf;
-      border: 3px solid #ffffff;
-      border-radius: 10px;
+    }
+
+    .preview-trigger span {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      padding: 6px 9px;
+      border-radius: 9px;
+      color: #fff;
+      background: rgba(33, 49, 77, 0.82);
+      font-size: 13px;
+      font-weight: 700;
     }
 
     .level-card {
@@ -217,35 +400,122 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
-      padding: 10px 12px;
+      margin-bottom: 12px;
+      padding: 9px 12px;
       border-radius: 12px;
-      background: var(--cream);
       color: #6b3f00;
-      font-weight: 900;
+      background: var(--cream);
+      font-weight: 700;
     }
 
     .level-card strong {
-      color: #bd2f68;
-      font-size: 22px;
+      color: #a82e61;
+      font-size: 20px;
+      font-weight: 800;
     }
 
     h2 {
-      margin: 0 0 10px;
+      margin: 0 0 11px;
       color: #28385c;
-      font-size: 19px;
-      letter-spacing: 0;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
     .level-picker {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 9px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
     }
+
+    .level-thumb {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      overflow: hidden;
+      border: 3px solid #fff;
+      border-radius: 11px;
+      background: #fff;
+      box-shadow: 0 3px 0 #c9d8e8;
+    }
+
+    .level-thumb img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .level-thumb span {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      display: grid;
+      width: 23px;
+      height: 23px;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: rgba(33, 49, 77, 0.78);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .level-thumb.active {
+      border-color: var(--sun);
+      box-shadow: 0 3px 0 var(--sun-dark);
+    }
+
+    .level-thumb.done::after {
+      content: "已完成";
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      padding: 3px 5px;
+      border-radius: 7px;
+      color: #17452e;
+      background: var(--mint);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .level-thumb.imported span { background: rgba(189, 47, 104, 0.84); }
+
+    .manage-images {
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .manage-images summary {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 11px;
+      color: #204b6f;
+      background: #e4f3ff;
+      box-shadow: 0 3px 0 #a7cee9;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .manage-images summary::-webkit-details-marker { display: none; }
+
+    .manage-images summary::before {
+      content: "+";
+      margin-right: 7px;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .manage-images[open] summary::before { content: "−"; }
 
     .import-controls {
       display: grid;
-      gap: 8px;
+      gap: 9px;
       margin-top: 12px;
     }
 
@@ -264,147 +534,24 @@
       margin: 0;
       color: var(--muted);
       font-size: 13px;
+      font-weight: 600;
       line-height: 1.45;
-      font-weight: 700;
-    }
-
-    .level-thumb {
-      position: relative;
-      min-height: 0;
-      aspect-ratio: 16 / 9;
-      padding: 0;
-      overflow: hidden;
-      border: 3px solid #ffffff;
-      border-radius: 10px;
-      background: #ffffff;
-      box-shadow: 0 4px 0 #c9d8e8;
-    }
-
-    .level-thumb img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .level-thumb span {
-      position: absolute;
-      left: 4px;
-      top: 4px;
-      width: 24px;
-      height: 24px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      background: rgba(33, 49, 77, 0.78);
-      color: #ffffff;
-      font-size: 13px;
-      font-weight: 900;
-    }
-
-    .level-thumb.active {
-      border-color: var(--sun);
-      box-shadow: 0 4px 0 #d39d24;
-    }
-
-    .level-thumb.done::after {
-      content: "OK";
-      position: absolute;
-      right: 4px;
-      bottom: 4px;
-      padding: 3px 5px;
-      border-radius: 7px;
-      background: var(--mint);
-      color: #17452e;
-      font-size: 12px;
-      font-weight: 900;
-    }
-
-    .level-thumb.imported span {
-      background: rgba(189, 47, 104, 0.82);
-    }
-
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    button {
-      min-height: 48px;
-      border: 0;
-      border-radius: 12px;
-      background: var(--pink);
-      color: #ffffff;
-      font: inherit;
-      font-size: 17px;
-      font-weight: 900;
-      cursor: pointer;
-      box-shadow: 0 6px 0 var(--pink-dark);
-      transform: translateY(0);
-    }
-
-    button:hover {
-      background: #ee4e86;
-    }
-
-    button:active {
-      box-shadow: 0 2px 0 var(--pink-dark);
-      transform: translateY(4px);
-    }
-
-    button:disabled {
-      cursor: default;
-      opacity: 0.58;
-      box-shadow: none;
-      transform: none;
-    }
-
-    button.secondary {
-      background: var(--sky);
-      color: #1f3a5e;
-      box-shadow: 0 6px 0 #4f9bd0;
-    }
-
-    button.helper {
-      background: var(--mint);
-      color: #17452e;
-      box-shadow: 0 6px 0 #44aa72;
-    }
-
-    button.next {
-      background: var(--sun);
-      color: #644200;
-      box-shadow: 0 6px 0 #d39d24;
-    }
-
-    button.danger {
-      background: #ff8a80;
-      color: #5c1612;
-      box-shadow: 0 6px 0 #d4564e;
-    }
-
-    button.danger.subtle {
-      background: #ffe0dc;
-      color: #8b312b;
-      box-shadow: 0 6px 0 #e5aaa3;
     }
 
     .hint {
       margin: 0;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 14px;
+      font-weight: 600;
       line-height: 1.55;
-      font-weight: 700;
     }
 
     .confetti {
-      pointer-events: none;
       position: fixed;
+      z-index: 10;
       inset: 0;
       overflow: hidden;
-      z-index: 10;
+      pointer-events: none;
     }
 
     .confetti i {
@@ -416,111 +563,287 @@
       animation: fall 1100ms ease-in forwards;
     }
 
-    @keyframes pop {
-      0% { transform: scale(1); }
-      48% { transform: scale(1.08); }
-      100% { transform: scale(1); }
+    @keyframes fall {
+      from { opacity: 1; transform: translateY(0) rotate(0deg); }
+      to { opacity: 0; transform: translateY(105vh) rotate(420deg); }
     }
 
-    @keyframes fall {
-      0% {
-        opacity: 1;
-        transform: translateY(0) rotate(0deg);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(105vh) rotate(420deg);
-      }
+    dialog.reference-dialog {
+      width: min(680px, calc(100vw - 28px));
+      max-width: 680px;
+      padding: 0;
+      border: 0;
+      border-radius: 20px;
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 22px 55px rgba(33, 49, 77, 0.3);
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    dialog.reference-dialog[open] {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    dialog.reference-dialog::backdrop {
+      background: rgba(33, 49, 77, 0.42);
+      backdrop-filter: blur(4px);
+    }
+
+    .dialog-inner { padding: 18px; }
+
+    .dialog-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .dialog-head h2 { margin: 0; }
+
+    .dialog-close {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: #e8f4ff;
+      box-shadow: 0 4px 0 #a7cee9;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .dialog-image {
+      display: block;
+      width: 100%;
+      max-height: min(70vh, 560px);
+      object-fit: contain;
+      border-radius: 13px;
+      background: #fff2cf;
     }
 
     @media (max-width: 860px) {
       main {
-        width: min(100vw - 18px, 720px);
+        width: min(calc(100% - 18px), 720px);
         padding-top: 14px;
       }
 
-      .topbar,
-      .layout {
+      .topbar { align-items: center; }
+
+      .brand-note { display: none; }
+
+      .topbar-tools { gap: 8px; }
+
+      .sound-toggle {
+        min-height: 38px;
+        padding: 0 10px;
+        font-size: 14px;
+      }
+
+      .game-layout {
         display: block;
       }
 
-      .stats {
-        justify-content: flex-start;
-        margin-top: 12px;
+      .side {
+        margin-top: 14px;
       }
 
-      .side {
-        margin-top: 16px;
+      .core-actions {
+        position: sticky;
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        z-index: 6;
+        padding: 9px;
+        border-color: rgba(255, 255, 255, 0.7);
+        background: rgba(255, 253, 248, 0.78);
+        box-shadow: 0 7px 25px rgba(33, 49, 77, 0.2);
+        backdrop-filter: blur(12px);
       }
+
+      .core-actions button { min-height: 46px; }
+
+      .panel { padding: 14px; }
+    }
+
+    @media (max-width: 500px) {
+      .topbar {
+        gap: 10px;
+        margin-bottom: 7px;
+      }
+
+      h1 { font-size: clamp(30px, 11vw, 42px); }
+
+      .praise {
+        min-height: 45px;
+        margin-bottom: 9px;
+        font-size: 17px;
+      }
+
+      .stats {
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+
+      .stat { padding: 7px 5px; }
+
+      .stat span { font-size: 11px; }
+
+      .stat strong { font-size: 17px; }
+
+      .board-shell { padding: 8px; }
+
+      .tile::after {
+        right: 5px;
+        bottom: 4px;
+        width: 23px;
+        height: 23px;
+        font-size: 12px;
+      }
+
+      .core-actions {
+        grid-template-columns: 1.1fr 1fr 1fr;
+      }
+
+      .core-actions .helper,
+      .core-actions .next { grid-column: auto; }
+
+      .core-actions .next { grid-column: 1 / -1; }
+
+      .core-actions button {
+        min-height: 44px;
+        padding: 0 8px;
+        font-size: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+      }
+
+      dialog.reference-dialog { transform: none; }
+      dialog.reference-dialog[open] { transform: none; }
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+      .core-actions { background: #fffdf8; }
+      dialog.reference-dialog::backdrop { backdrop-filter: none; }
+    }
+
+    @media (prefers-contrast: more) {
+      :root { --muted: #34445f; }
+      .stat, .panel, .board-shell { border-color: var(--ink); }
+      .tile.selected { outline: 3px solid var(--ink); outline-offset: -3px; }
+      .tile.correct { box-shadow: inset 0 0 0 4px var(--mint-dark); }
+      .slot-guide.target { border-width: 4px; }
     }
   </style>
 </head>
 <body>
   <main>
-    <div class="topbar">
-      <h1>佩奇拼图</h1>
-      <div class="stats" aria-label="游戏状态">
-        <div class="stat"><span>关卡</span><strong id="level">1/9</strong></div>
-        <div class="stat"><span>奖章</span><strong id="badges">0</strong></div>
-        <div class="stat"><span>放对了</span><strong id="correct">0/9</strong></div>
-        <div class="stat"><span>步数</span><strong id="moves">0</strong></div>
+    <header class="topbar">
+      <div>
+        <h1>佩奇拼图</h1>
+        <span class="brand-note">小手指，慢慢找，拼出完整的故事。</span>
       </div>
-    </div>
+      <div class="topbar-tools">
+        <button id="soundBtn" class="sound-toggle" type="button" aria-pressed="true">声音：开</button>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="游戏状态">
+      <div class="stat"><span>关卡</span><strong id="level">1/9</strong></div>
+      <div class="stat"><span>奖章</span><strong id="badges">0</strong></div>
+      <div class="stat"><span>放对了</span><strong id="correct">0/9</strong></div>
+      <div class="stat"><span>步数</span><strong id="moves">0</strong></div>
+    </section>
+
     <p id="praise" class="praise" aria-live="polite">点两块图片，帮佩奇换位置吧。</p>
 
-    <div class="layout">
+    <div class="game-layout">
       <section class="board-shell" aria-label="拼图区域">
-        <div id="board" class="board"></div>
+        <div id="board" class="board" role="group" aria-label="九块拼图。可以点击交换，也可以按住拖动。"></div>
       </section>
 
       <aside class="side">
-        <div class="panel">
+        <section class="panel core-actions" aria-label="核心操作">
+          <button id="helpBtn" class="helper" type="button">帮我放一块</button>
+          <button id="shuffleBtn" class="secondary" type="button">重玩</button>
+          <button id="openLevelsBtn" class="secondary" type="button">选关</button>
+          <button id="nextBtn" class="secondary" type="button">换一张</button>
+        </section>
+
+        <section class="panel reference-panel" aria-labelledby="referenceTitle">
           <div class="level-card">
             <span id="levelName">第 1 关</span>
             <strong id="levelProgress">1 / 9</strong>
           </div>
-          <img id="preview" class="preview" src="peppa1.jpg" alt="完整参考图">
-          <div class="actions">
-            <button id="shuffleBtn" type="button">重玩本关</button>
-            <button id="nextBtn" class="next" type="button">下一张</button>
-            <button id="helpBtn" class="helper" type="button">帮我放一块</button>
-            <button id="solveBtn" class="secondary" type="button">看看完成图</button>
-          </div>
-        </div>
-        <div class="panel">
-          <h2>选择图片</h2>
+          <h2 id="referenceTitle">参考图</h2>
+          <button id="previewTrigger" class="preview-trigger" type="button" aria-haspopup="dialog">
+            <img id="preview" src="peppa1.jpg" alt="第 1 关完整参考图">
+            <span>查看参考图</span>
+          </button>
+        </section>
+
+        <section id="levelsPanel" class="panel" aria-labelledby="levelsTitle">
+          <h2 id="levelsTitle">选择图片</h2>
           <div id="levelPicker" class="level-picker" aria-label="选择关卡"></div>
-          <div class="import-controls">
-            <input id="imageImport" class="file-input" type="file" accept="image/*" multiple>
-            <button id="importBtn" class="secondary" type="button">导入新图片</button>
-            <button id="deleteImportedBtn" class="danger" type="button">删除当前导入图</button>
-            <button id="clearImportedBtn" class="danger subtle" type="button">清空导入图片</button>
-            <p id="importNote" class="import-note">导入的图片只保存在这台设备上。</p>
-          </div>
-        </div>
-        <div class="panel">
-          <p class="hint">玩法很简单：先点一块，再点另一块，它们就会换位置。绿色边框表示这块已经放对啦。</p>
-        </div>
+        </section>
+
+        <section class="panel" aria-labelledby="manageTitle">
+          <h2 id="manageTitle">我的图片</h2>
+          <details id="manageImages" class="manage-images">
+            <summary id="manageSummary">添加我的图片</summary>
+            <div class="import-controls">
+              <input id="imageImport" class="file-input" type="file" accept="image/*" multiple>
+              <button id="importBtn" class="secondary" type="button">选择图片导入</button>
+              <button id="deleteImportedBtn" class="danger" type="button" hidden>删除当前图片</button>
+              <button id="clearImportedBtn" class="danger subtle" type="button" hidden>清空我的图片</button>
+              <p id="importNote" class="import-note" aria-live="polite">导入的图片只保存在这台设备上。</p>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel">
+          <p class="hint">玩法很简单：先点一块，再点另一块，它们就会换位置。也可以按住拼图块拖到想去的格子。绿色边框表示这块已经放对啦。</p>
+        </section>
       </aside>
     </div>
   </main>
+
+  <dialog id="referenceDialog" class="reference-dialog" aria-labelledby="dialogTitle">
+    <div class="dialog-inner">
+      <div class="dialog-head">
+        <h2 id="dialogTitle">查看参考图</h2>
+        <button id="dialogClose" class="dialog-close" type="button" aria-label="关闭参考图">×</button>
+      </div>
+      <img id="dialogImage" class="dialog-image" src="peppa1.jpg" alt="完整参考图">
+    </div>
+  </dialog>
+
   <div id="confetti" class="confetti" aria-hidden="true"></div>
 
   <script>
     const SIZE = 3;
     const TOTAL = SIZE * SIZE;
     const IMPORT_STORAGE_KEY = "peppa-puzzle-imported-images-v1";
+    const SOUND_STORAGE_KEY = "peppa-puzzle-sound-v1";
     const baseLevels = Array.from({ length: 9 }, (_, index) => ({
-      name: `\u7b2c ${index + 1} \u5173`,
+      name: `第 ${index + 1} 关`,
       image: `peppa${index + 1}.jpg`
     }));
+    let storageWarning = false;
     let importedLevels = loadImportedLevels();
     let levels = [...baseLevels, ...importedLevels];
     const cheers = [
-      "\u771f\u68d2\uff0c\u53c8\u653e\u5bf9\u4e00\u5757\uff01",
-      "\u597d\u5389\u5bb3\uff0c\u7ee7\u7eed\u627e\u4e00\u627e\uff01",
-      "\u4f69\u5947\u8981\u5f00\u5fc3\u5566\uff01",
-      "\u592a\u597d\u4e86\uff0c\u8fd9\u5757\u5bf9\u4e86\uff01"
+      "真棒，又放对一块！",
+      "好厉害，继续找一找！",
+      "佩奇要开心啦！",
+      "太好了，这块对了！"
     ];
 
     const board = document.getElementById("board");
@@ -531,25 +854,45 @@
     const praiseEl = document.getElementById("praise");
     const confettiEl = document.getElementById("confetti");
     const previewEl = document.getElementById("preview");
+    const previewTrigger = document.getElementById("previewTrigger");
     const levelNameEl = document.getElementById("levelName");
     const levelProgressEl = document.getElementById("levelProgress");
     const levelPickerEl = document.getElementById("levelPicker");
+    const levelsPanel = document.getElementById("levelsPanel");
     const imageImportEl = document.getElementById("imageImport");
     const importBtn = document.getElementById("importBtn");
     const deleteImportedBtn = document.getElementById("deleteImportedBtn");
     const clearImportedBtn = document.getElementById("clearImportedBtn");
     const importNoteEl = document.getElementById("importNote");
+    const manageImages = document.getElementById("manageImages");
+    const manageSummary = document.getElementById("manageSummary");
     const shuffleBtn = document.getElementById("shuffleBtn");
     const nextBtn = document.getElementById("nextBtn");
     const helpBtn = document.getElementById("helpBtn");
-    const solveBtn = document.getElementById("solveBtn");
+    const openLevelsBtn = document.getElementById("openLevelsBtn");
+    const soundBtn = document.getElementById("soundBtn");
+    const referenceDialog = document.getElementById("referenceDialog");
+    const dialogClose = document.getElementById("dialogClose");
+    const dialogImage = document.getElementById("dialogImage");
 
     let order = [];
-    let selectedIndex = null;
+    let tileSlots = [];
+    let tileElements = [];
+    let motions = [];
+    let slotGuides = [];
+    let selectedTile = null;
+    let focusedSlot = 0;
     let moves = 0;
     let currentLevel = 0;
     let completedLevels = new Set();
-    let lastPopped = [];
+    let completionAnnounced = false;
+    let springFrame = 0;
+    let pendingFeedback = null;
+    let pointerSession = null;
+    let boardSize = { width: 0, height: 0 };
+    let audioContext = null;
+    let soundEnabled = loadSoundPreference();
+    let prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function currentImage() {
       return levels[currentLevel].image;
@@ -571,18 +914,32 @@
         if (!Array.isArray(parsed)) return [];
         return parsed
           .filter(item => item && typeof item.name === "string" && typeof item.image === "string")
-          .map(item => ({
-            name: item.name,
-            image: item.image,
-            imported: true
-          }));
+          .map(item => ({ name: item.name, image: item.image, imported: true }));
       } catch {
+        storageWarning = true;
         return [];
+      }
+    }
+
+    function loadSoundPreference() {
+      try {
+        const stored = window.localStorage.getItem(SOUND_STORAGE_KEY);
+        return stored === null ? true : stored !== "off";
+      } catch {
+        return true;
       }
     }
 
     function saveImportedLevels() {
       window.localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(importedLevels));
+    }
+
+    function saveSoundPreference() {
+      try {
+        window.localStorage.setItem(SOUND_STORAGE_KEY, soundEnabled ? "on" : "off");
+      } catch {
+        // Sound still works for this session when storage is unavailable.
+      }
     }
 
     function shiftCompletedAfterDelete(deletedIndex) {
@@ -594,16 +951,14 @@
     }
 
     function keepOnlyBuiltInCompleted() {
-      completedLevels = new Set(
-        Array.from(completedLevels).filter(index => index < baseLevels.length)
-      );
+      completedLevels = new Set(Array.from(completedLevels).filter(index => index < baseLevels.length));
     }
 
     function makeShuffledOrder() {
       const next = Array.from({ length: TOTAL }, (_, index) => index);
-      for (let i = next.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [next[i], next[j]] = [next[j], next[i]];
+      for (let index = next.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
       }
       if (next.every((tile, index) => tile === index)) {
         [next[0], next[1]] = [next[1], next[0]];
@@ -615,58 +970,595 @@
       return list.filter((tile, index) => tile === index).length;
     }
 
-    function tilePosition(tileNumber) {
-      const row = Math.floor(tileNumber / SIZE);
-      const col = tileNumber % SIZE;
-      return `${(col * 100) / (SIZE - 1)}% ${(row * 100) / (SIZE - 1)}%`;
+    function isReducedMotion() {
+      return prefersReducedMotion;
     }
 
-    function clearTileFocus() {
-      window.requestAnimationFrame(() => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
+    function tileOffset(slot) {
+      return {
+        x: (slot % SIZE) * (boardSize.width / SIZE),
+        y: Math.floor(slot / SIZE) * (boardSize.height / SIZE)
+      };
+    }
+
+    function updateMotionStyle(tileNumber) {
+      const motion = motions[tileNumber];
+      const element = tileElements[tileNumber];
+      if (!motion || !element) return;
+      element.style.setProperty("--x", `${motion.x}px`);
+      element.style.setProperty("--y", `${motion.y}px`);
+      element.style.transform = `translate3d(${motion.x}px, ${motion.y}px, 0)`;
+    }
+
+    function syncBoardSize() {
+      const rect = board.getBoundingClientRect();
+      const previousSize = boardSize;
+      boardSize = { width: rect.width, height: rect.height };
+      if (!boardSize.width || !boardSize.height) return;
+      tileElements.forEach((_, tileNumber) => {
+        const target = tileOffset(tileSlots[tileNumber]);
+        const motion = motions[tileNumber];
+        if (previousSize.width && previousSize.height && (motion.springing || motion.dragging)) {
+          motion.x *= boardSize.width / previousSize.width;
+          motion.y *= boardSize.height / previousSize.height;
+        }
+        motion.targetX = target.x;
+        motion.targetY = target.y;
+        if (!motion.springing && !motion.dragging) {
+          motion.x = target.x;
+          motion.y = target.y;
+          updateMotionStyle(tileNumber);
         }
       });
     }
 
-    function playTone(kind) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      const context = new AudioContext();
-      const notes = kind === "win" ? [523, 659, 784] : [659, 784];
-      notes.forEach((frequency, index) => {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.value = frequency;
-        gain.gain.setValueAtTime(0.0001, context.currentTime + index * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + index * 0.08 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + index * 0.08 + 0.18);
-        oscillator.connect(gain).connect(context.destination);
-        oscillator.start(context.currentTime + index * 0.08);
-        oscillator.stop(context.currentTime + index * 0.08 + 0.2);
+    function updateSlotGuides(targetSlot = null) {
+      slotGuides.forEach((guide, slot) => guide.classList.toggle("target", slot === targetSlot));
+    }
+
+    function tileStatus(tileNumber) {
+      const slot = tileSlots[tileNumber];
+      return tileNumber === slot ? "已经放对" : "尚未放对";
+    }
+
+    function updateTileAccessibility() {
+      tileElements.forEach((element, tileNumber) => {
+        const slot = tileSlots[tileNumber];
+        const isSelected = selectedTile === tileNumber;
+        element.setAttribute("aria-pressed", String(isSelected));
+        element.setAttribute("aria-label", `拼图块 ${tileNumber + 1}，当前位于第 ${slot + 1} 格，${tileStatus(tileNumber)}`);
+        element.tabIndex = slot === focusedSlot ? 0 : -1;
+        element.classList.toggle("selected", isSelected);
+        element.classList.toggle("correct", tileNumber === slot);
       });
     }
 
+    function updateTilePositions(immediate = false) {
+      tileElements.forEach((_, tileNumber) => {
+        const target = tileOffset(tileSlots[tileNumber]);
+        const motion = motions[tileNumber];
+        motion.targetX = target.x;
+        motion.targetY = target.y;
+        if (immediate || isReducedMotion()) {
+          motion.x = target.x;
+          motion.y = target.y;
+          motion.vx = 0;
+          motion.vy = 0;
+          motion.springing = false;
+          motion.dragging = false;
+          updateMotionStyle(tileNumber);
+        }
+      });
+      if (immediate || isReducedMotion()) updateSlotGuides();
+    }
+
+    function createBoard() {
+      for (let slot = 0; slot < TOTAL; slot += 1) {
+        const guide = document.createElement("div");
+        guide.className = "slot-guide";
+        guide.style.left = `${(slot % SIZE) * 33.3333333333}%`;
+        guide.style.top = `${Math.floor(slot / SIZE) * 33.3333333333}%`;
+        guide.setAttribute("aria-hidden", "true");
+        slotGuides.push(guide);
+        board.appendChild(guide);
+      }
+
+      for (let tileNumber = 0; tileNumber < TOTAL; tileNumber += 1) {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = "tile";
+        tile.dataset.tile = String(tileNumber);
+        tile.dataset.number = String(tileNumber + 1);
+        tile.style.backgroundPosition = `${(tileNumber % SIZE) * 50}% ${Math.floor(tileNumber / SIZE) * 50}%`;
+        tile.setAttribute("aria-pressed", "false");
+        tile.addEventListener("pointerdown", handlePointerDown);
+        tile.addEventListener("pointermove", handlePointerMove);
+        tile.addEventListener("pointerup", handlePointerUp);
+        tile.addEventListener("pointercancel", handlePointerCancel);
+        tile.addEventListener("keydown", handleTileKeydown);
+        tileElements.push(tile);
+        motions.push({ x: 0, y: 0, targetX: 0, targetY: 0, vx: 0, vy: 0, springing: false, dragging: false });
+        board.appendChild(tile);
+      }
+
+      if ("ResizeObserver" in window) {
+        new ResizeObserver(syncBoardSize).observe(board);
+      } else {
+        window.addEventListener("resize", syncBoardSize);
+      }
+    }
+
+    function setLevelImage() {
+      const image = currentImage();
+      document.documentElement.style.setProperty("--puzzle-image", `url("${image}")`);
+      previewEl.src = image;
+      previewEl.alt = `${levels[currentLevel].name}完整参考图`;
+      dialogImage.src = image;
+      dialogImage.alt = `${levels[currentLevel].name}完整参考图`;
+      levelNameEl.textContent = levels[currentLevel].name;
+      levelProgressEl.textContent = `${currentLevel + 1} / ${levels.length}`;
+
+      const probe = new Image();
+      probe.onload = () => {
+        document.documentElement.style.setProperty("--puzzle-ratio", `${probe.naturalWidth} / ${probe.naturalHeight}`);
+        window.requestAnimationFrame(syncBoardSize);
+      };
+      probe.src = image;
+    }
+
+    function updateStats() {
+      const correct = countCorrect();
+      const complete = correct === TOTAL;
+      levelEl.textContent = `${currentLevel + 1}/${levels.length}`;
+      badgesEl.textContent = String(completedLevels.size);
+      correctEl.textContent = `${correct}/${TOTAL}`;
+      movesEl.textContent = String(moves);
+      helpBtn.hidden = complete;
+      helpBtn.disabled = complete;
+      nextBtn.disabled = currentLevel === levels.length - 1 && !complete;
+      nextBtn.classList.toggle("next", complete);
+      nextBtn.classList.toggle("secondary", !complete);
+      nextBtn.textContent = complete ? "下一张" : "换一张";
+      deleteImportedBtn.hidden = !isImportedLevel();
+      clearImportedBtn.hidden = importedLevels.length === 0;
+      manageSummary.textContent = importedLevels.length ? `管理我的图片（${importedLevels.length}）` : "添加我的图片";
+      renderLevelPicker();
+      updateTileAccessibility();
+    }
+
+    function renderLevelPicker() {
+      levelPickerEl.innerHTML = "";
+      levels.forEach((level, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "level-thumb";
+        button.classList.toggle("active", index === currentLevel);
+        button.classList.toggle("done", completedLevels.has(index));
+        button.classList.toggle("imported", level.imported);
+        button.setAttribute("aria-label", `选择${level.name}${completedLevels.has(index) ? "，已经完成" : ""}`);
+
+        const image = document.createElement("img");
+        image.src = level.image;
+        image.alt = "";
+        const label = document.createElement("span");
+        label.textContent = String(index + 1);
+        button.append(image, label);
+        button.addEventListener("click", () => startLevel(index));
+        levelPickerEl.appendChild(button);
+      });
+    }
+
+    function cancelSpring(tileNumber) {
+      if (!motions[tileNumber]) return;
+      motions[tileNumber].springing = false;
+      motions[tileNumber].vx = 0;
+      motions[tileNumber].vy = 0;
+      maybeFinishFeedback(tileNumber);
+    }
+
+    function springToSlot(tileNumber, velocity = { x: 0, y: 0 }) {
+      const target = tileOffset(tileSlots[tileNumber]);
+      const motion = motions[tileNumber];
+      motion.targetX = target.x;
+      motion.targetY = target.y;
+      motion.vx = Math.max(-900, Math.min(900, velocity.x || 0));
+      motion.vy = Math.max(-900, Math.min(900, velocity.y || 0));
+      if (isReducedMotion()) {
+        motion.x = target.x;
+        motion.y = target.y;
+        motion.springing = false;
+        updateMotionStyle(tileNumber);
+        maybeFinishFeedback(tileNumber);
+        return;
+      }
+      motion.springing = true;
+      if (!springFrame) springFrame = window.requestAnimationFrame(tickSprings);
+    }
+
+    function tickSprings(timestamp) {
+      springFrame = 0;
+      let active = false;
+      const dt = Math.min(0.032, Math.max(0.001, (timestamp - (tickSprings.lastTime || timestamp)) / 1000));
+      tickSprings.lastTime = timestamp;
+
+      motions.forEach((motion, tileNumber) => {
+        if (!motion.springing || motion.dragging) return;
+        const stiffness = 360;
+        const damping = 2 * Math.sqrt(stiffness) * 0.94;
+        const ax = (motion.targetX - motion.x) * stiffness - motion.vx * damping;
+        const ay = (motion.targetY - motion.y) * stiffness - motion.vy * damping;
+        motion.vx += ax * dt;
+        motion.vy += ay * dt;
+        motion.x += motion.vx * dt;
+        motion.y += motion.vy * dt;
+
+        const settled = Math.abs(motion.targetX - motion.x) < 0.35 && Math.abs(motion.targetY - motion.y) < 0.35 && Math.abs(motion.vx) < 9 && Math.abs(motion.vy) < 9;
+        if (settled) {
+          motion.x = motion.targetX;
+          motion.y = motion.targetY;
+          motion.vx = 0;
+          motion.vy = 0;
+          motion.springing = false;
+          maybeFinishFeedback(tileNumber);
+        } else {
+          active = true;
+        }
+        updateMotionStyle(tileNumber);
+      });
+
+      if (active) springFrame = window.requestAnimationFrame(tickSprings);
+    }
+
+    function maybeFinishFeedback(tileNumber) {
+      if (!pendingFeedback || !pendingFeedback.tiles.has(tileNumber)) return;
+      if (motions[tileNumber].springing || motions[tileNumber].dragging) return;
+      pendingFeedback.tiles.delete(tileNumber);
+      if (pendingFeedback.tiles.size === 0) {
+        const feedback = pendingFeedback;
+        pendingFeedback = null;
+        finishMoveFeedback(feedback.before, feedback.assisted, feedback.changedTiles);
+      }
+    }
+
+    function animateTilesToSlots(tileNumbers, velocities, feedback) {
+      if (isReducedMotion()) {
+        tileNumbers.forEach(tileNumber => springToSlot(tileNumber));
+        finishMoveFeedback(feedback.before, feedback.assisted, feedback.changedTiles);
+        return;
+      }
+      pendingFeedback = {
+        before: feedback.before,
+        assisted: feedback.assisted,
+        changedTiles: feedback.changedTiles,
+        tiles: new Set(tileNumbers)
+      };
+      tileNumbers.forEach((tileNumber, index) => springToSlot(tileNumber, velocities?.[index]));
+    }
+
+    function finishMoveFeedback(before, assisted, changedTiles) {
+      const after = countCorrect();
+      if (after > before) {
+        praiseEl.textContent = cheers[Math.floor(Math.random() * cheers.length)];
+        playTone("good");
+      } else if (!assisted) {
+        praiseEl.textContent = "没关系，再试一次。";
+      }
+
+      changedTiles.forEach(tileNumber => {
+        if (tileNumber === tileSlots[tileNumber]) {
+          tileElements[tileNumber].classList.remove("correct-flash");
+          window.requestAnimationFrame(() => tileElements[tileNumber].classList.add("correct-flash"));
+        }
+      });
+
+      if (after === TOTAL && !completionAnnounced) {
+        completionAnnounced = true;
+        const firstCompletion = !completedLevels.has(currentLevel);
+        completedLevels.add(currentLevel);
+        playTone("win");
+        throwConfetti();
+        if (completedLevels.size === levels.length) {
+          praiseEl.textContent = "所有图片都完成啦，奖章收集满了！";
+        } else if (firstCompletion) {
+          praiseEl.textContent = `第 ${currentLevel + 1} 关完成啦，点“下一张”继续。`;
+        } else {
+          praiseEl.textContent = "这张又拼好啦，真熟练！";
+        }
+      }
+      updateStats();
+    }
+
+    function beginMove(before, assisted, first, second, velocities = []) {
+      const tileNumbers = [order[first], order[second]].filter((tileNumber, index, list) => list.indexOf(tileNumber) === index);
+      tileNumbers.forEach(tileNumber => cancelSpring(tileNumber));
+      [order[first], order[second]] = [order[second], order[first]];
+      selectedTile = null;
+      updateTilePositions();
+      updateTileAccessibility();
+      moves += assisted ? 0 : 1;
+      tileNumbers.forEach(tileNumber => {
+        const motion = motions[tileNumber];
+        motion.targetX = tileOffset(tileSlots[tileNumber]).x;
+        motion.targetY = tileOffset(tileSlots[tileNumber]).y;
+      });
+      order.forEach((tileNumber, slot) => { tileSlots[tileNumber] = slot; });
+      updateTileAccessibility();
+      animateTilesToSlots(tileNumbers, velocities, { before, assisted, changedTiles: tileNumbers });
+    }
+
+    function swapTiles(first, second, assisted = false, velocities = []) {
+      if (first === second || Number.isNaN(first) || Number.isNaN(second)) return;
+      const before = countCorrect();
+      beginMove(before, assisted, first, second, velocities);
+    }
+
+    function selectOrSwap(slotIndex) {
+      const tileNumber = order[slotIndex];
+      focusedSlot = slotIndex;
+      if (selectedTile === tileNumber) {
+        selectedTile = null;
+        praiseEl.textContent = "已经取消选中，再选一块吧。";
+        updateTileAccessibility();
+        return;
+      }
+
+      if (selectedTile === null) {
+        selectedTile = tileNumber;
+        praiseEl.textContent = "再点另一块，试试看。";
+        updateTileAccessibility();
+        return;
+      }
+
+      const firstSlot = tileSlots[selectedTile];
+      swapTiles(firstSlot, slotIndex);
+    }
+
+    function focusSlot(slot) {
+      const targetSlot = Math.max(0, Math.min(TOTAL - 1, slot));
+      focusedSlot = targetSlot;
+      const tileNumber = order[targetSlot];
+      updateTileAccessibility();
+      tileElements[tileNumber].focus();
+    }
+
+    function handleTileKeydown(event) {
+      const tileNumber = Number(event.currentTarget.dataset.tile);
+      const slot = tileSlots[tileNumber];
+      if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        const row = Math.floor(slot / SIZE);
+        const col = slot % SIZE;
+        const nextRow = event.key === "ArrowUp" ? row - 1 : event.key === "ArrowDown" ? row + 1 : row;
+        const nextCol = event.key === "ArrowLeft" ? col - 1 : event.key === "ArrowRight" ? col + 1 : col;
+        if (nextRow >= 0 && nextRow < SIZE && nextCol >= 0 && nextCol < SIZE) focusSlot(nextRow * SIZE + nextCol);
+        return;
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectOrSwap(slot);
+      }
+    }
+
+    function boardPoint(event) {
+      const rect = board.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    function slotAtPoint(x, y) {
+      if (x < 0 || y < 0 || x > boardSize.width || y > boardSize.height) return null;
+      const col = Math.max(0, Math.min(SIZE - 1, Math.floor(x / (boardSize.width / SIZE))));
+      const row = Math.max(0, Math.min(SIZE - 1, Math.floor(y / (boardSize.height / SIZE))));
+      return row * SIZE + col;
+    }
+
+    function clampDraggedPosition(x, y) {
+      const tileWidth = boardSize.width / SIZE;
+      const tileHeight = boardSize.height / SIZE;
+      return {
+        x: Math.max(-tileWidth * 0.25, Math.min(boardSize.width - tileWidth * 0.75, x)),
+        y: Math.max(-tileHeight * 0.25, Math.min(boardSize.height - tileHeight * 0.75, y))
+      };
+    }
+
+    function handlePointerDown(event) {
+      if (event.button !== undefined && event.button !== 0) return;
+      const tileNumber = Number(event.currentTarget.dataset.tile);
+      const point = boardPoint(event);
+      const motion = motions[tileNumber];
+      cancelSpring(tileNumber);
+      motion.dragging = false;
+      event.currentTarget.classList.add("pressed");
+      try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+      pointerSession = {
+        pointerId: event.pointerId,
+        tileNumber,
+        startX: point.x,
+        startY: point.y,
+        grabX: point.x - motion.x,
+        grabY: point.y - motion.y,
+        lastX: point.x,
+        lastY: point.y,
+        lastTime: performance.now(),
+        velocityX: 0,
+        velocityY: 0,
+        dragged: false,
+        startSlot: tileSlots[tileNumber]
+      };
+    }
+
+    function handlePointerMove(event) {
+      if (!pointerSession || event.pointerId !== pointerSession.pointerId) return;
+      const point = boardPoint(event);
+      const distance = Math.hypot(point.x - pointerSession.startX, point.y - pointerSession.startY);
+      if (!pointerSession.dragged && distance <= 10) return;
+
+      if (!pointerSession.dragged) {
+        pointerSession.dragged = true;
+        motions[pointerSession.tileNumber].dragging = true;
+        tileElements[pointerSession.tileNumber].classList.add("dragging");
+      }
+
+      const now = performance.now();
+      const elapsed = Math.max(1, now - pointerSession.lastTime) / 1000;
+      pointerSession.velocityX = (point.x - pointerSession.lastX) / elapsed;
+      pointerSession.velocityY = (point.y - pointerSession.lastY) / elapsed;
+      pointerSession.lastX = point.x;
+      pointerSession.lastY = point.y;
+      pointerSession.lastTime = now;
+
+      const position = clampDraggedPosition(point.x - pointerSession.grabX, point.y - pointerSession.grabY);
+      const motion = motions[pointerSession.tileNumber];
+      motion.x = position.x;
+      motion.y = position.y;
+      updateMotionStyle(pointerSession.tileNumber);
+      const targetSlot = slotAtPoint(motion.x + boardSize.width / SIZE / 2, motion.y + boardSize.height / SIZE / 2);
+      updateSlotGuides(targetSlot);
+    }
+
+    function finishPointer(event, cancelled = false) {
+      if (!pointerSession || event.pointerId !== pointerSession.pointerId) return;
+      const session = pointerSession;
+      const element = tileElements[session.tileNumber];
+      const motion = motions[session.tileNumber];
+      pointerSession = null;
+      element.classList.remove("pressed", "dragging");
+      try { element.releasePointerCapture(event.pointerId); } catch {}
+      updateSlotGuides();
+
+      if (!session.dragged || cancelled) {
+        motion.dragging = false;
+        springToSlot(session.tileNumber);
+        if (!cancelled) selectOrSwap(session.startSlot);
+        return;
+      }
+
+      motion.dragging = false;
+      const targetSlot = slotAtPoint(motion.x + boardSize.width / SIZE / 2, motion.y + boardSize.height / SIZE / 2);
+      if (targetSlot === null || targetSlot === session.startSlot) {
+        const before = countCorrect();
+        pendingFeedback = isReducedMotion() ? null : { before, assisted: true, changedTiles: [session.tileNumber], tiles: new Set([session.tileNumber]) };
+        springToSlot(session.tileNumber, { x: session.velocityX * 0.14, y: session.velocityY * 0.14 });
+        if (isReducedMotion()) praiseEl.textContent = "回到原来的位置，再试一次。";
+        return;
+      }
+
+      const targetTile = order[targetSlot];
+      const before = countCorrect();
+      cancelSpring(targetTile);
+      [order[session.startSlot], order[targetSlot]] = [order[targetSlot], order[session.startSlot]];
+      order.forEach((tileNumber, slot) => { tileSlots[tileNumber] = slot; });
+      moves += 1;
+      updateTileAccessibility();
+      animateTilesToSlots(
+        [session.tileNumber, targetTile],
+        [{ x: session.velocityX * 0.14, y: session.velocityY * 0.14 }, { x: 0, y: 0 }],
+        { before, assisted: false, changedTiles: [session.tileNumber, targetTile] }
+      );
+    }
+
+    function handlePointerUp(event) { finishPointer(event); }
+
+    function handlePointerCancel(event) { finishPointer(event, true); }
+
+    function helpOneTile() {
+      const targetSlot = order.findIndex((tile, slot) => tile !== slot);
+      if (targetSlot === -1) return;
+      const sourceSlot = order.findIndex(tile => tile === targetSlot);
+      praiseEl.textContent = "小帮手来啦，放好一块。";
+      swapTiles(targetSlot, sourceSlot, true);
+    }
+
+    function startLevel(levelIndex) {
+      if (!levels[levelIndex]) return;
+      currentLevel = levelIndex;
+      order = makeShuffledOrder();
+      tileSlots = Array(TOTAL);
+      order.forEach((tileNumber, slot) => { tileSlots[tileNumber] = slot; });
+      selectedTile = null;
+      focusedSlot = 0;
+      moves = 0;
+      completionAnnounced = false;
+      pendingFeedback = null;
+      pointerSession = null;
+      setLevelImage();
+      praiseEl.textContent = `开始${levels[currentLevel].name}，帮佩奇把图片拼好吧。`;
+      updateTilePositions(true);
+      updateStats();
+      window.requestAnimationFrame(() => {
+        syncBoardSize();
+        updateTilePositions(true);
+        updateTileAccessibility();
+      });
+    }
+
+    function nextLevel() {
+      if (currentLevel < levels.length - 1) {
+        startLevel(currentLevel + 1);
+        return;
+      }
+      if (completedLevels.size === levels.length) {
+        praiseEl.textContent = "所有图片都玩过啦，可以挑喜欢的再玩一次。";
+        throwConfetti();
+      } else {
+        const firstUnfinished = levels.findIndex((_, index) => !completedLevels.has(index));
+        startLevel(firstUnfinished === -1 ? 0 : firstUnfinished);
+      }
+    }
+
     function throwConfetti() {
+      if (isReducedMotion()) {
+        confettiEl.replaceChildren();
+        return;
+      }
       const colors = ["#f06292", "#ffd166", "#73d6a2", "#88c9ff", "#ff9f80"];
-      confettiEl.innerHTML = "";
-      for (let i = 0; i < 34; i += 1) {
+      confettiEl.replaceChildren();
+      for (let index = 0; index < 34; index += 1) {
         const bit = document.createElement("i");
         bit.style.left = `${Math.random() * 100}%`;
-        bit.style.background = colors[i % colors.length];
+        bit.style.background = colors[index % colors.length];
         bit.style.animationDelay = `${Math.random() * 240}ms`;
         bit.style.transform = `rotate(${Math.random() * 180}deg)`;
         confettiEl.appendChild(bit);
       }
-      window.setTimeout(() => {
-        confettiEl.innerHTML = "";
-      }, 1600);
+      window.setTimeout(() => confettiEl.replaceChildren(), 1600);
+    }
+
+    function getAudioContext() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return null;
+      if (!audioContext) audioContext = new AudioContext();
+      return audioContext;
+    }
+
+    function playTone(kind) {
+      if (!soundEnabled) return;
+      const context = getAudioContext();
+      if (!context) return;
+      if (context.state === "suspended") context.resume();
+      const notes = kind === "win" ? [523, 659, 784] : [659, 784];
+      notes.forEach((frequency, index) => {
+        const start = context.currentTime + index * 0.08;
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.14, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(start + 0.2);
+      });
+    }
+
+    function updateSoundButton() {
+      soundBtn.textContent = soundEnabled ? "声音：开" : "声音：关";
+      soundBtn.setAttribute("aria-pressed", String(soundEnabled));
     }
 
     function makeImportedName(file, fallbackNumber) {
       const baseName = file.name.replace(/\.[^.]+$/, "").trim();
-      return (baseName || `\u6211\u7684\u56fe\u7247 ${fallbackNumber}`).slice(0, 18);
+      return (baseName || `我的图片 ${fallbackNumber}`).slice(0, 18);
     }
 
     function resizeImageFile(file, fallbackNumber) {
@@ -675,32 +1567,26 @@
           reject(new Error("not image"));
           return;
         }
-
         const reader = new FileReader();
         reader.onerror = () => reject(new Error("read failed"));
         reader.onload = () => {
-          const img = new Image();
-          img.onerror = () => reject(new Error("image failed"));
-          img.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("image failed"));
+          image.onload = () => {
             const maxSide = 1400;
-            const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-            const width = Math.max(1, Math.round(img.naturalWidth * scale));
-            const height = Math.max(1, Math.round(img.naturalHeight * scale));
+            const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+            const width = Math.max(1, Math.round(image.naturalWidth * scale));
+            const height = Math.max(1, Math.round(image.naturalHeight * scale));
             const canvas = document.createElement("canvas");
             canvas.width = width;
             canvas.height = height;
             const context = canvas.getContext("2d");
             context.fillStyle = "#ffffff";
             context.fillRect(0, 0, width, height);
-            context.drawImage(img, 0, 0, width, height);
-
-            resolve({
-              name: makeImportedName(file, fallbackNumber),
-              image: canvas.toDataURL("image/jpeg", 0.86),
-              imported: true
-            });
+            context.drawImage(image, 0, 0, width, height);
+            resolve({ name: makeImportedName(file, fallbackNumber), image: canvas.toDataURL("image/jpeg", 0.86), imported: true });
           };
-          img.src = reader.result;
+          image.src = reader.result;
         };
         reader.readAsDataURL(file);
       });
@@ -709,13 +1595,11 @@
     async function importImages(files) {
       const imageFiles = Array.from(files || []).filter(file => file.type.startsWith("image/"));
       if (imageFiles.length === 0) {
-        importNoteEl.textContent = "\u6ca1\u6709\u9009\u5230\u56fe\u7247\u6587\u4ef6\u3002";
+        importNoteEl.textContent = "没有选到图片文件。";
         return;
       }
-
       importBtn.disabled = true;
-      importNoteEl.textContent = "\u6b63\u5728\u5bfc\u5165\u56fe\u7247...";
-
+      importNoteEl.textContent = "正在导入图片…";
       const importedStart = importedLevels.length;
       const nextLevels = [];
       for (const file of imageFiles) {
@@ -725,282 +1609,120 @@
           // Skip images the browser cannot decode.
         }
       }
-
       if (nextLevels.length === 0) {
         importBtn.disabled = false;
-        importNoteEl.textContent = "\u8fd9\u4e9b\u56fe\u7247\u6682\u65f6\u65e0\u6cd5\u5bfc\u5165\u3002";
+        importNoteEl.textContent = "这些图片暂时无法导入。";
         return;
       }
-
       importedLevels = [...importedLevels, ...nextLevels];
       refreshLevels();
       try {
         saveImportedLevels();
-        importNoteEl.textContent = `\u5df2\u5bfc\u5165 ${nextLevels.length} \u5f20\u56fe\u7247\uff0c\u5df2\u4fdd\u5b58\u5728\u8fd9\u53f0\u8bbe\u5907\u4e0a\u3002`;
+        importNoteEl.textContent = `已导入 ${nextLevels.length} 张图片，已保存到这台设备。`;
       } catch {
-        importNoteEl.textContent = `\u5df2\u52a0\u5165 ${nextLevels.length} \u5f20\u56fe\u7247\uff0c\u4f46\u672c\u673a\u7a7a\u95f4\u4e0d\u8db3\uff0c\u5237\u65b0\u540e\u53ef\u80fd\u4f1a\u6d88\u5931\u3002`;
+        importNoteEl.textContent = `已加入 ${nextLevels.length} 张图片，但本机空间不足，刷新后可能会消失。`;
       }
-
       imageImportEl.value = "";
       importBtn.disabled = false;
       startLevel(baseLevels.length + importedStart);
     }
 
     function deleteCurrentImportedLevel() {
-      if (!isImportedLevel()) {
-        importNoteEl.textContent = "\u53ea\u80fd\u5220\u9664\u81ea\u5df1\u5bfc\u5165\u7684\u56fe\u7247\u3002";
-        return;
-      }
-
+      if (!isImportedLevel()) return;
       const level = levels[currentLevel];
-      const confirmed = window.confirm(`\u5220\u9664\u201c${level.name}\u201d\uff1f\u8fd9\u53ea\u4f1a\u5220\u9664\u8fd9\u53f0\u8bbe\u5907\u4e0a\u7684\u5bfc\u5165\u56fe\u7247\u3002`);
-      if (!confirmed) return;
-
+      if (!window.confirm(`删除“${level.name}”？这只会删除这台设备上的导入图片。`)) return;
       const deletedIndex = currentLevel;
-      const importedIndex = deletedIndex - baseLevels.length;
-      importedLevels.splice(importedIndex, 1);
+      importedLevels.splice(deletedIndex - baseLevels.length, 1);
       refreshLevels();
       shiftCompletedAfterDelete(deletedIndex);
-
       try {
         saveImportedLevels();
-        importNoteEl.textContent = `\u5df2\u5220\u9664\u201c${level.name}\u201d\u3002`;
+        importNoteEl.textContent = `已删除“${level.name}”。`;
       } catch {
-        importNoteEl.textContent = "\u5df2\u5220\u9664\uff0c\u4f46\u672c\u673a\u4fdd\u5b58\u72b6\u6001\u53ef\u80fd\u672a\u66f4\u65b0\u3002";
+        importNoteEl.textContent = "已删除，但本机保存状态可能未更新。";
       }
-
       startLevel(Math.min(deletedIndex, levels.length - 1));
     }
 
     function clearImportedLevels() {
-      if (importedLevels.length === 0) {
-        importNoteEl.textContent = "\u8fd8\u6ca1\u6709\u5bfc\u5165\u56fe\u7247\u3002";
-        return;
-      }
-
-      const confirmed = window.confirm(`\u6e05\u7a7a ${importedLevels.length} \u5f20\u5bfc\u5165\u56fe\u7247\uff1f\u5185\u7f6e\u56fe\u7247\u4f1a\u4fdd\u7559\u3002`);
-      if (!confirmed) return;
-
+      if (importedLevels.length === 0) return;
+      if (!window.confirm(`清空 ${importedLevels.length} 张导入图片？内置图片会保留。`)) return;
       importedLevels = [];
       refreshLevels();
       keepOnlyBuiltInCompleted();
-
       try {
         saveImportedLevels();
-        importNoteEl.textContent = "\u5df2\u6e05\u7a7a\u6240\u6709\u5bfc\u5165\u56fe\u7247\u3002";
+        importNoteEl.textContent = "已清空所有导入图片。";
       } catch {
-        importNoteEl.textContent = "\u5df2\u6e05\u7a7a\uff0c\u4f46\u672c\u673a\u4fdd\u5b58\u72b6\u6001\u53ef\u80fd\u672a\u66f4\u65b0\u3002";
+        importNoteEl.textContent = "已清空，但本机保存状态可能未更新。";
       }
-
       startLevel(Math.min(currentLevel, baseLevels.length - 1));
     }
 
-    function syncLevelImage() {
-      const image = currentImage();
-      document.documentElement.style.setProperty("--puzzle-image", `url("${image}")`);
-      previewEl.src = image;
-      previewEl.alt = `${levels[currentLevel].name}\u5b8c\u6574\u53c2\u8003\u56fe`;
-      levelNameEl.textContent = levels[currentLevel].name;
-      levelProgressEl.textContent = `${currentLevel + 1} / ${levels.length}`;
-
-      const probe = new Image();
-      probe.onload = () => {
-        document.documentElement.style.setProperty("--puzzle-ratio", `${probe.naturalWidth} / ${probe.naturalHeight}`);
-      };
-      probe.src = image;
-    }
-
-    function updateStats() {
-      const correct = countCorrect();
-      levelEl.textContent = `${currentLevel + 1}/${levels.length}`;
-      badgesEl.textContent = String(completedLevels.size);
-      correctEl.textContent = `${correct}/${TOTAL}`;
-      movesEl.textContent = String(moves);
-      helpBtn.disabled = correct === TOTAL;
-      nextBtn.disabled = currentLevel === levels.length - 1 && correct !== TOTAL;
-      deleteImportedBtn.disabled = !isImportedLevel();
-      clearImportedBtn.disabled = importedLevels.length === 0;
-      renderLevelPicker();
-    }
-
-    function renderLevelPicker() {
-      levelPickerEl.innerHTML = "";
-      levels.forEach((level, index) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "level-thumb";
-        if (index === currentLevel) button.classList.add("active");
-        if (completedLevels.has(index)) button.classList.add("done");
-        if (level.imported) button.classList.add("imported");
-        button.setAttribute("aria-label", `\u9009\u62e9${level.name}`);
-
-        const img = document.createElement("img");
-        img.src = level.image;
-        img.alt = "";
-        const label = document.createElement("span");
-        label.textContent = String(index + 1);
-        button.append(img, label);
-        button.addEventListener("click", () => startLevel(index));
-        levelPickerEl.appendChild(button);
-      });
-    }
-
-    function render() {
-      board.innerHTML = "";
-      order.forEach((tileNumber, slotIndex) => {
-        const tile = document.createElement("div");
-        tile.className = "tile";
-        tile.role = "button";
-        tile.draggable = true;
-        tile.style.backgroundPosition = tilePosition(tileNumber);
-        tile.dataset.number = String(tileNumber + 1);
-        tile.setAttribute("aria-label", `\u7b2c ${slotIndex + 1} \u683c`);
-
-        if (selectedIndex === slotIndex) tile.classList.add("selected");
-        if (tileNumber === slotIndex) tile.classList.add("correct");
-        if (lastPopped.includes(slotIndex)) tile.classList.add("pop");
-
-        tile.addEventListener("pointerup", event => {
-          if (event.pointerType === "mouse" && event.button !== 0) return;
-          selectOrSwap(slotIndex);
-        });
-        tile.addEventListener("dragstart", event => {
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("text/plain", String(slotIndex));
-        });
-        tile.addEventListener("dragover", event => {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
-        });
-        tile.addEventListener("drop", event => {
-          event.preventDefault();
-          const from = Number(event.dataTransfer.getData("text/plain"));
-          swapTiles(from, slotIndex);
-        });
-
-        board.appendChild(tile);
-      });
-      updateStats();
-      lastPopped = [];
-      clearTileFocus();
-    }
-
-    function celebrateIfBetter(before) {
-      const after = countCorrect();
-      if (after > before) {
-        praiseEl.textContent = cheers[Math.floor(Math.random() * cheers.length)];
-        playTone("good");
+    function openReferenceDialog() {
+      dialogImage.src = currentImage();
+      if (typeof referenceDialog.showModal === "function") {
+        referenceDialog.showModal();
       } else {
-        praiseEl.textContent = "\u6ca1\u5173\u7cfb\uff0c\u518d\u8bd5\u4e00\u6b21\u3002";
+        referenceDialog.setAttribute("open", "");
       }
-
-      if (after === TOTAL) {
-        const firstCompletion = !completedLevels.has(currentLevel);
-        completedLevels.add(currentLevel);
-        playTone("win");
-        throwConfetti();
-        if (completedLevels.size === levels.length) {
-          praiseEl.textContent = `${levels.length} \u5f20\u56fe\u7247\u90fd\u5b8c\u6210\u5566\uff0c\u5956\u7ae0\u6536\u96c6\u6ee1\u4e86\uff01`;
-        } else if (firstCompletion) {
-          praiseEl.textContent = `\u7b2c ${currentLevel + 1} \u5173\u5b8c\u6210\u5566\uff0c\u70b9\u201c\u4e0b\u4e00\u5f20\u201d\u7ee7\u7eed\u3002`;
-        } else {
-          praiseEl.textContent = "\u8fd9\u5f20\u53c8\u62fc\u597d\u5566\uff0c\u771f\u719f\u7ec3\uff01";
-        }
-      }
+      dialogClose.focus();
     }
 
-    function swapTiles(first, second, assisted = false) {
-      if (first === second || Number.isNaN(first) || Number.isNaN(second)) return;
-      const before = countCorrect();
-      [order[first], order[second]] = [order[second], order[first]];
-      selectedIndex = null;
-      clearTileFocus();
-      moves += assisted ? 0 : 1;
-      lastPopped = [first, second].filter(index => order[index] === index);
-      celebrateIfBetter(before);
-      render();
+    function closeReferenceDialog() {
+      if (referenceDialog.open && typeof referenceDialog.close === "function") referenceDialog.close();
+      else referenceDialog.removeAttribute("open");
+      previewTrigger.focus();
     }
 
-    function selectOrSwap(slotIndex) {
-      if (selectedIndex === slotIndex) {
-        selectedIndex = null;
-        clearTileFocus();
-        praiseEl.textContent = "\u5df2\u7ecf\u53d6\u6d88\u9009\u4e2d\uff0c\u518d\u9009\u4e00\u5757\u5427\u3002";
-        render();
-        return;
-      }
-
-      if (selectedIndex === null) {
-        selectedIndex = slotIndex;
-        praiseEl.textContent = "\u518d\u70b9\u53e6\u4e00\u5757\uff0c\u8bd5\u8bd5\u770b\u3002";
-        render();
-        clearTileFocus();
-        return;
-      }
-
-      const firstSlot = selectedIndex;
-      selectedIndex = null;
-      clearTileFocus();
-      swapTiles(firstSlot, slotIndex);
+    function updateImportMessage() {
+      if (storageWarning) importNoteEl.textContent = "暂时无法读取本机图片，仍可以继续玩内置关卡。";
     }
 
-    function helpOneTile() {
-      const targetSlot = order.findIndex((tile, slot) => tile !== slot);
-      if (targetSlot === -1) return;
-      const sourceSlot = order.findIndex(tile => tile === targetSlot);
-      praiseEl.textContent = "\u5c0f\u5e2e\u624b\u6765\u5566\uff0c\u653e\u597d\u4e00\u5757\u3002";
-      swapTiles(targetSlot, sourceSlot, true);
-    }
-
-    function startLevel(levelIndex) {
-      currentLevel = levelIndex;
-      order = makeShuffledOrder();
-      selectedIndex = null;
-      moves = 0;
-      lastPopped = [];
-      syncLevelImage();
-      praiseEl.textContent = `\u5f00\u59cb${levels[currentLevel].name}\uff0c\u5e2e\u4f69\u5947\u628a\u56fe\u7247\u62fc\u597d\u5427\u3002`;
-      render();
-    }
-
-    function nextLevel() {
-      if (currentLevel < levels.length - 1) {
-        startLevel(currentLevel + 1);
-        return;
-      }
-      if (completedLevels.size === levels.length) {
-        praiseEl.textContent = "\u5168\u90e8\u56fe\u7247\u90fd\u73a9\u8fc7\u5566\uff0c\u53ef\u4ee5\u6311\u559c\u6b22\u7684\u518d\u73a9\u4e00\u6b21\u3002";
-        throwConfetti();
-      } else {
-        const firstUnfinished = levels.findIndex((_, index) => !completedLevels.has(index));
-        startLevel(firstUnfinished === -1 ? 0 : firstUnfinished);
-      }
-    }
-
-    function solve() {
-      order = Array.from({ length: TOTAL }, (_, index) => index);
-      selectedIndex = null;
-      lastPopped = Array.from({ length: TOTAL }, (_, index) => index);
-      completedLevels.add(currentLevel);
-      praiseEl.textContent = `\u770b\uff0c${levels[currentLevel].name}\u5b8c\u6574\u56fe\u7247\u5728\u8fd9\u91cc\u3002`;
-      throwConfetti();
-      render();
-    }
-
+    soundBtn.addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      saveSoundPreference();
+      updateSoundButton();
+      if (soundEnabled) playTone("good");
+    });
     shuffleBtn.addEventListener("click", () => startLevel(currentLevel));
     nextBtn.addEventListener("click", nextLevel);
     helpBtn.addEventListener("click", helpOneTile);
-    solveBtn.addEventListener("click", solve);
+    openLevelsBtn.addEventListener("click", () => {
+      levelsPanel.scrollIntoView({ behavior: isReducedMotion() ? "auto" : "smooth", block: "center" });
+      window.setTimeout(() => levelPickerEl.querySelector(".active")?.focus(), isReducedMotion() ? 0 : 180);
+    });
+    previewTrigger.addEventListener("click", openReferenceDialog);
+    dialogClose.addEventListener("click", closeReferenceDialog);
+    referenceDialog.addEventListener("click", event => {
+      if (event.target === referenceDialog) closeReferenceDialog();
+    });
     importBtn.addEventListener("click", () => imageImportEl.click());
     imageImportEl.addEventListener("change", event => importImages(event.target.files));
     deleteImportedBtn.addEventListener("click", deleteCurrentImportedLevel);
     clearImportedBtn.addEventListener("click", clearImportedLevels);
+    window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener?.("change", event => {
+      prefersReducedMotion = event.matches;
+      if (prefersReducedMotion) {
+        motions.forEach((motion, tileNumber) => {
+          motion.springing = false;
+          motion.dragging = false;
+          const target = tileOffset(tileSlots[tileNumber]);
+          motion.x = target.x;
+          motion.y = target.y;
+          updateMotionStyle(tileNumber);
+        });
+        throwConfetti();
+      }
+    });
+
+    createBoard();
+    updateSoundButton();
     startLevel(0);
+    updateImportMessage();
 
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("sw.js").catch(() => {});
-      });
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
     }
   </script>
 </body>
