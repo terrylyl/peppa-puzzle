@@ -1293,13 +1293,14 @@
       beginMove(before, assisted, first, second, velocities);
     }
 
-    function selectOrSwap(slotIndex) {
+    function selectOrSwap(slotIndex, fromPointer = false) {
       const tileNumber = order[slotIndex];
       focusedSlot = slotIndex;
       if (selectedTile === tileNumber) {
         selectedTile = null;
         praiseEl.textContent = "已经取消选中，再选一块吧。";
         updateTileAccessibility();
+        if (fromPointer) tileElements[tileNumber].blur();
         return;
       }
 
@@ -1312,6 +1313,7 @@
 
       const firstSlot = tileSlots[selectedTile];
       swapTiles(firstSlot, slotIndex);
+      if (fromPointer) tileElements[tileNumber].blur();
     }
 
     function focusSlot(slot) {
@@ -1431,7 +1433,8 @@
       if (!session.dragged || cancelled) {
         motion.dragging = false;
         springToSlot(session.tileNumber);
-        if (!cancelled) selectOrSwap(session.startSlot);
+        if (cancelled) element.blur();
+        if (!cancelled) selectOrSwap(session.startSlot, true);
         return;
       }
 
@@ -1441,6 +1444,7 @@
         const before = countCorrect();
         pendingFeedback = isReducedMotion() ? null : { before, assisted: true, changedTiles: [session.tileNumber], tiles: new Set([session.tileNumber]) };
         springToSlot(session.tileNumber, { x: session.velocityX * 0.14, y: session.velocityY * 0.14 });
+        element.blur();
         if (isReducedMotion()) praiseEl.textContent = "回到原来的位置，再试一次。";
         return;
       }
@@ -1452,6 +1456,7 @@
       order.forEach((tileNumber, slot) => { tileSlots[tileNumber] = slot; });
       moves += 1;
       updateTileAccessibility();
+      element.blur();
       animateTilesToSlots(
         [session.tileNumber, targetTile],
         [{ x: session.velocityX * 0.14, y: session.velocityY * 0.14 }, { x: 0, y: 0 }],
