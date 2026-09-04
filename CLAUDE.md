@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 零依赖的静态 PWA 拼图小游戏（中文界面，面向小朋友），部署在 GitHub Pages。**没有构建系统、包管理器、测试框架或 lint 配置**——不要引入 npm/bundler，也不要把代码拆成模块文件，除非用户明确要求。
 
-全部逻辑都在单文件 [index.html](index.html)（约 1800 行）里：
+全部逻辑都在单文件 [index.html](index.html)（约 1820 行）里：
 
 | 区段 | 行号 | 内容 |
 | --- | --- | --- |
 | `<style>` | 15–810 | 全部 CSS，含 CSS 变量主题、响应式断点（860px / 500px）、横屏矮视口断点（`orientation: landscape and max-height: 560px`）、`prefers-reduced-motion` / `prefers-contrast` / `prefers-reduced-transparency` 适配 |
 | `<body>` | 812–894 | 静态 DOM 骨架（棋盘容器、侧栏面板、参考图 `<dialog>`、彩纸层） |
-| `<script>` | 896–1802 | 全部游戏逻辑，无模块、无框架、纯全局函数 + 顶层可变状态 |
+| `<script>` | 896–1816 | 全部游戏逻辑，无模块、无框架、纯全局函数 + 顶层可变状态 |
 
 ## 本地运行与验证
 
@@ -20,6 +20,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 python -m http.server 8000
+```
+
+**本地验证前先把 service worker 注销掉**，否则它会 cache-first 地把上一版 `index.html` 喂给你，改动看起来"没生效"（实测踩过）：
+
+```js
+navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+caches.keys().then(ks => ks.forEach(k => caches.delete(k)));
 ```
 
 验证靠手动在浏览器里操作，没有自动化测试。改动后至少覆盖：点击选中→交换、按住拖拽→落格、"帮我放一块"、换关/选关、导入与删除图片、窗口缩放（棋盘尺寸重算）、系统开启"减少动态效果"后的降级路径。
@@ -57,7 +64,7 @@ python -m http.server 8000
 
 ## 修改时的固定动作
 
-- **改了 `index.html` 就要提升 [sw.js](sw.js) 里的 `CACHE_NAME`**（当前 `peppa-puzzle-v16`）。service worker 是 cache-first，不换 key 的话回访用户永远拿旧页面。
+- **改了 `index.html` 就要提升 [sw.js](sw.js) 里的 `CACHE_NAME`**（当前 `peppa-puzzle-v17`）。service worker 是 cache-first，不换 key 的话回访用户永远拿旧页面。
 - 新增静态资源要同时加进 `sw.js` 的 `ASSETS`；`cache.addAll()` 是全有或全无，任何一项 404 会让整个安装失败。
 - 改交互时同步维护无障碍属性：`updateTileAccessibility()` 负责 `aria-pressed`、中文 `aria-label`、roving `tabIndex` 和 `selected`/`correct` class。
 - 界面文案全部是中文口语化、面向儿童的短句，新增提示照此风格。
@@ -71,6 +78,6 @@ python -m http.server 8000
 
 ## 仓库现状注意事项
 
-- **`icons/` 未被 git 跟踪，线上 `icons/icon-192.png` 与 `icon-512.png` 均返回 404（已实测）。** 后果：manifest 图标和 iOS `apple-touch-icon` 失效；更严重的是 `sw.js` 的 `cache.addAll()` 全有或全无，两个图标 404 会让 service worker 安装直接失败——**当前线上版本没有离线缓存能力**。修复方式是把这两个文件提交进 `main`（同时会自然修复 SW）。
+- `icons/icon-192.png`、`icon-512.png` 曾长期未提交、线上 404，导致 `cache.addAll()` 整体失败、service worker 从未安装成功。已于 2026-09-04 提交修复，线上实测 SW 现已 `activated` 且缓存 14 个条目。留个教训：`cache.addAll()` 全有或全无，任何一个 `ASSETS` 条目 404 都会让整个 SW 装不上，而 `caches.open()` 仍会把空缓存桶建出来——**"缓存桶存在"不代表 SW 装好了**，要看 `getRegistrations()`。
 - 根目录的 `peppa-puzzle-pwa-v*.zip`、`preview-v*.png` 是历史打包/截图产物，未跟踪，不属于运行时资源；`peppa-puzzle-pwa.zip` 仍被 `main` 跟踪但在本地已删除。
-- 本地 `index.html` 是 CRLF/LF 混合，与线上内容一致（差异仅为换行符），比对部署状态时用 `diff` 前先规范换行。
+- `core.autocrlf=true`：工作区的 `index.html` 是全 CRLF，仓库里的 blob 是 LF，切分支时 git 会重写工作区文件。所以直接 `diff` 本地文件和线上响应会全文件不一致——比对部署状态前先 `tr -d ''`。
