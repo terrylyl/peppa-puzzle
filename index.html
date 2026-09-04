@@ -28,6 +28,7 @@
       --sky-dark: #276792;
       --cream: #fff6da;
       --puzzle-ratio: 16 / 9;
+      --puzzle-ratio-num: 1.778;
       --radius-lg: 22px;
       --radius-md: 16px;
       --shadow-board: 0 20px 42px rgba(50, 63, 99, 0.18);
@@ -629,8 +630,8 @@
 
     @media (max-width: 860px) {
       main {
-        width: min(calc(100% - 18px), 720px);
-        padding-top: 14px;
+        width: min(calc(100% - 12px), 720px);
+        padding-top: 10px;
       }
 
       .topbar { align-items: center; }
@@ -670,31 +671,33 @@
     }
 
     @media (max-width: 500px) {
+      main { width: calc(100% - 8px); }
+
       .topbar {
         gap: 10px;
-        margin-bottom: 7px;
+        margin-bottom: 4px;
       }
 
-      h1 { font-size: clamp(30px, 11vw, 42px); }
+      h1 { font-size: clamp(24px, 8vw, 34px); }
 
       .praise {
-        min-height: 45px;
-        margin-bottom: 9px;
-        font-size: 17px;
+        min-height: 26px;
+        margin-bottom: 6px;
+        font-size: 16px;
       }
 
       .stats {
         gap: 5px;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
       }
 
-      .stat { padding: 7px 5px; }
+      .stat { padding: 6px 5px; }
 
       .stat span { font-size: 11px; }
 
       .stat strong { font-size: 17px; }
 
-      .board-shell { padding: 8px; }
+      .board-shell { padding: 4px; }
 
       .tile::after {
         right: 5px;
@@ -717,6 +720,66 @@
         min-height: 44px;
         padding: 0 8px;
         font-size: 14px;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 560px) {
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 240px;
+        grid-template-areas:
+          "topbar topbar"
+          "board  stats"
+          "board  praise"
+          "board  side";
+        align-content: start;
+        column-gap: 12px;
+        width: calc(100% - 8px);
+        padding-top: 8px;
+      }
+
+      .topbar {
+        grid-area: topbar;
+        margin-bottom: 6px;
+      }
+
+      h1 { font-size: clamp(22px, 4vh, 30px); }
+
+      .stats {
+        grid-area: stats;
+        width: 100%;
+        margin-bottom: 8px;
+      }
+
+      .praise {
+        grid-area: praise;
+        min-height: 24px;
+        margin-bottom: 8px;
+        font-size: 15px;
+      }
+
+      .game-layout { display: contents; }
+
+      .board-shell {
+        grid-area: board;
+        align-self: start;
+        padding: 4px;
+      }
+
+      .board {
+        width: min(100%, calc((100vh - 88px) * var(--puzzle-ratio-num)));
+        width: min(100%, calc((100svh - 88px) * var(--puzzle-ratio-num)));
+        margin: 0 auto;
+      }
+
+      .side {
+        grid-area: side;
+        margin-top: 0;
+      }
+
+      .core-actions {
+        position: static;
+        bottom: auto;
       }
     }
 
@@ -1104,6 +1167,7 @@
       const probe = new Image();
       probe.onload = () => {
         document.documentElement.style.setProperty("--puzzle-ratio", `${probe.naturalWidth} / ${probe.naturalHeight}`);
+        document.documentElement.style.setProperty("--puzzle-ratio-num", String(probe.naturalWidth / probe.naturalHeight));
         window.requestAnimationFrame(syncBoardSize);
       };
       probe.src = image;
