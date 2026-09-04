@@ -767,8 +767,8 @@
       }
 
       .board {
-        width: min(100%, calc((100vh - 88px) * var(--puzzle-ratio-num)));
-        width: min(100%, calc((100svh - 88px) * var(--puzzle-ratio-num)));
+        width: min(100%, max(120px, calc((100vh - 88px) * var(--puzzle-ratio-num))));
+        width: min(100%, max(120px, calc((100svh - 88px) * var(--puzzle-ratio-num))));
         margin: 0 auto;
       }
 
@@ -1201,7 +1201,7 @@
         button.className = "level-thumb";
         button.classList.toggle("active", index === currentLevel);
         button.classList.toggle("done", completedLevels.has(index));
-        button.classList.toggle("imported", level.imported);
+        button.classList.toggle("imported", Boolean(level.imported));
         button.setAttribute("aria-label", `选择${level.name}${completedLevels.has(index) ? "，已经完成" : ""}`);
 
         const image = document.createElement("img");
@@ -1287,6 +1287,13 @@
       }
     }
 
+    function flushPendingFeedback() {
+      if (!pendingFeedback) return;
+      const feedback = pendingFeedback;
+      pendingFeedback = null;
+      finishMoveFeedback(feedback.before, feedback.assisted, feedback.changedTiles);
+    }
+
     function animateTilesToSlots(tileNumbers, velocities, feedback) {
       if (isReducedMotion()) {
         tileNumbers.forEach(tileNumber => springToSlot(tileNumber));
@@ -1337,6 +1344,7 @@
     }
 
     function beginMove(before, assisted, first, second, velocities = []) {
+      flushPendingFeedback();
       const tileNumbers = [order[first], order[second]].filter((tileNumber, index, list) => list.indexOf(tileNumber) === index);
       tileNumbers.forEach(tileNumber => cancelSpring(tileNumber));
       [order[first], order[second]] = [order[second], order[first]];
@@ -1432,6 +1440,7 @@
 
     function handlePointerDown(event) {
       if (event.button !== undefined && event.button !== 0) return;
+      if (pointerSession) return;
       const tileNumber = Number(event.currentTarget.dataset.tile);
       const point = boardPoint(event);
       const motion = motions[tileNumber];
@@ -1508,6 +1517,7 @@
       motion.dragging = false;
       const targetSlot = slotAtPoint(motion.x + boardSize.width / SIZE / 2, motion.y + boardSize.height / SIZE / 2);
       if (targetSlot === null || targetSlot === session.startSlot) {
+        flushPendingFeedback();
         const before = countCorrect();
         pendingFeedback = isReducedMotion() ? null : { before, assisted: true, changedTiles: [session.tileNumber], tiles: new Set([session.tileNumber]) };
         springToSlot(session.tileNumber, { x: session.velocityX * 0.14, y: session.velocityY * 0.14 });
@@ -1517,6 +1527,7 @@
       }
 
       const targetTile = order[targetSlot];
+      flushPendingFeedback();
       const before = countCorrect();
       cancelSpring(targetTile);
       [order[session.startSlot], order[targetSlot]] = [order[targetSlot], order[session.startSlot]];
@@ -1555,6 +1566,7 @@
       completionAnnounced = false;
       pendingFeedback = null;
       pointerSession = null;
+      tileElements.forEach(element => element.classList.remove("pressed", "dragging"));
       setLevelImage();
       praiseEl.textContent = `开始${levels[currentLevel].name}，帮佩奇把图片拼好吧。`;
       updateTilePositions(true);
@@ -1776,6 +1788,8 @@
     imageImportEl.addEventListener("change", event => importImages(event.target.files));
     deleteImportedBtn.addEventListener("click", deleteCurrentImportedLevel);
     clearImportedBtn.addEventListener("click", clearImportedLevels);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
     window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener?.("change", event => {
       prefersReducedMotion = event.matches;
       if (prefersReducedMotion) {
